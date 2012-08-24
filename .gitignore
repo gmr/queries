@@ -1,0 +1,6 @@
+.idea
+*.pyc
+build
+dist
+*.egg-info
+atlassian-ide-plugin.xml
