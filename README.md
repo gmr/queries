@@ -12,10 +12,16 @@ Without requiring any additional code, the module level caching of connections
 allows for multiple modules in the same interpreter to use the same PostgreSQL
 connection.
 
+Installation
+------------
+pgsql_wrapper is available via pypi and can be installed with easy_install or pip:
+
+pip install pgsql_wrapper
+
 Requirements
 ------------
 
- - psycopg2
+ - psycopg2 (for cpython support)
  - psycopg2ct (for PyPy support)
 
 Example
