@@ -9,7 +9,7 @@ else:
     install_requires = ['psycopg2']
 
 setup(name='pgsql_wrapper',
-      version='1.1.1',
+      version='1.1.2',
       description="PostgreSQL / psycopg2 caching wrapper class",
       maintainer="Gavin M. Roy",
       maintainer_email="gmr@meetme.com",

@@ -6,7 +6,7 @@ sets the cursor type to extras.DictCursor, and turns on both Unicode and UUID
 support.
 
 """
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 import hashlib
 import logging
@@ -63,6 +63,7 @@ def _add_cached_connection(hash_value, connection):
     else:
         LOGGER.critical('Connection is already assigned: %s', hash_value)
 
+
 def _check_for_unused_expired_connections():
 
     global CONNECTIONS
@@ -71,6 +72,7 @@ def _check_for_unused_expired_connections():
             (time.time() > CONNECTIONS[hash_value]['last_client'] + CACHE_TTL)):
             LOGGER.info('Removing expired connection: %s', hash_value)
             del CONNECTIONS[hash_value]
+
 
 def _generate_connection_hash(dsn):
     """Generates a connection hash for the given parameters.
@@ -132,7 +134,7 @@ class PgSQL(object):
 
         :param str host: PostgreSQL Host
         :param port: PostgreSQL port
-        :param str dbname: Dabase name
+        :param str dbname: Database name
         :param str user: PostgreSQL user name
         :param str password: User's password
         :param psycopg2.cursor: The cursor type to use
@@ -140,6 +142,7 @@ class PgSQL(object):
         """
         dsn = self._get_dsn(host, port, dbname, user, password)
         self._connection = self._get_connection(dsn)
+        self._connection_hash = None
         self._cursor = self._get_cursor(cursor_factory)
         self._register_unicode_cursor(self._cursor)
         self._register_uuid()
@@ -175,7 +178,7 @@ class PgSQL(object):
         """Connect to PostgreSQL using the DSN.
 
         :param str dsn: The connection dsn
-        :return: psycopg2.connection
+        :rtype: psycopg2.connection
 
         """
         LOGGER.info('Connecting to %s', dsn)
