@@ -185,6 +185,7 @@ class PgSQLTests(unittest.TestCase):
         """Connection reset should be called when using PyPy"""
         self.client._conn.reset.assert_called_once_with()
 
+    @unittest.skipIf(target == 'PyPy', 'Not invoked in PyPy')
     def test_del_invokes_cleanup(self):
         """Deleting PgSQL instance invokes PgSQL._cleanup"""
         with mock.patch('pgsql_wrapper.PgSQL._cleanup') as cleanup:
