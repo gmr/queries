@@ -23,8 +23,8 @@ pip install pgsql_wrapper
 Requirements
 ------------
 
- - psycopg2 (for cpython support)
- - psycopg2ct (for PyPy support)
+- psycopg2 (for cpython support)
+- psycopg2ct (for PyPy support)
 
 Example
 -------
