@@ -209,3 +209,52 @@ class PgSQLTests(unittest.TestCase):
                                      dbname="PgSQLTests"):
                 pass
         cleanup.assert_called_with()
+
+    @mock.patch('psycopg2.connect')
+    @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_uuid')
+    def test_close_removes_from_cache(self, _reg_uuid, _reg_type, _connect):
+        """Ensure connection removed from cache on close"""
+        pgsql = pgsql_wrapper.PgSQL(host="127.0.0.2", dbname="PgSQLTests")
+        dsn_hash = pgsql._dsn_hash
+        self.assertIn(dsn_hash, pgsql_wrapper.CONNECTIONS)
+        pgsql.close()
+        self.assertNotIn(dsn_hash, pgsql_wrapper.CONNECTIONS)
+
+    @mock.patch('psycopg2.connect')
+    @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_uuid')
+    def test_close_invokes_connection_close(self, _reg_uuid, _reg_type, connect):
+        """Ensure close calls connection.close"""
+        conn = pgsql_wrapper.PgSQL(host="127.0.0.2", dbname="PgSQLTests")
+        close_mock = mock.Mock()
+        conn._conn.close = close_mock
+        conn.close()
+        close_mock .assert_called_once_with()
+
+    @mock.patch('psycopg2.connect')
+    @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_uuid')
+    def test_close_sets_conn_to_none(self, _reg_uuid, _reg_type, connect):
+        """Ensure PgSQL._conn is None after close"""
+        conn = pgsql_wrapper.PgSQL(host="127.0.0.2", dbname="PgSQLTests")
+        conn.close()
+        self.assertIsNone(conn._conn)
+
+    @mock.patch('psycopg2.connect')
+    @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_uuid')
+    def test_close_sets_cursor_to_none(self, _reg_uuid, _reg_type, connect):
+        """Ensure PgSQL._cursor is None after close"""
+        conn = pgsql_wrapper.PgSQL(host="127.0.0.2", dbname="PgSQLTests")
+        conn.close()
+        self.assertIsNone(conn._cursor)
+
+    @mock.patch('psycopg2.connect')
+    @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_uuid')
+    def test_close_raises_when_already_closed(self, _reg_uuid, _reg_type, connect):
+        """Ensure PgSQL._cursor is None after close"""
+        conn = pgsql_wrapper.PgSQL(host="127.0.0.2", dbname="PgSQLTests")
+        conn.close()
+        self.assertRaises(AssertionError, conn.close)

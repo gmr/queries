@@ -201,11 +201,11 @@ class PgSQL(object):
         """Explicitly close the connection and remove it from the connection
         cache.
 
-        :raises: Operational Error
+        :raises: AssertionError
 
         """
         if not self._conn:
-            raise OperationalError('Connection not open')
+            raise AssertionError('Connection not open')
         self._conn.close()
         _remove_cached_connection(self._dsn_hash)
         self._conn = None
