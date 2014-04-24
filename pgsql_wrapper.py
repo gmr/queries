@@ -70,7 +70,7 @@ def _check_for_unused_expired_connections():
 
     """
     global CONNECTIONS
-    for dsn_hash in CONNECTIONS.keys():
+    for dsn_hash in list(CONNECTIONS.keys()):
         if (not CONNECTIONS[dsn_hash][CLIENTS] and
             (time.time() > CONNECTIONS[dsn_hash][LAST] + CACHE_TTL)):
             LOGGER.info('Removing expired connection: %s', dsn_hash)
@@ -84,7 +84,7 @@ def _generate_connection_hash(dsn):
     :rtype: str
 
     """
-    return str(hashlib.sha1(dsn).hexdigest())
+    return str(hashlib.sha1(dsn.encode('utf-8')).hexdigest())
 
 
 def _get_cached_connection(dsn_hash):
