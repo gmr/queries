@@ -6,7 +6,7 @@ sets the cursor type to extras.DictCursor, and turns on both Unicode and UUID
 support.
 
 """
-__version__ = '1.1.2'
+__version__ = '1.2.0'
 
 import hashlib
 import logging
