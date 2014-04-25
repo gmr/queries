@@ -32,7 +32,7 @@ class SessionTests(unittest.TestCase):
         self._reg_type = register_type
         self._reg_uuid = register_uuid
         self.uri = 'pgsql://postgres@127.0.0.1:5432/queries'
-        self.pid = hashlib.md5(self.uri).digest()
+        self.pid = hashlib.md5(self.uri.encode('utf-8')).digest()
         if self.pid in pool.Pools:
             del pool.Pools[self.pid]
         self.client = session.Session(self.uri)

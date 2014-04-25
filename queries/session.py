@@ -367,7 +367,7 @@ class Session(object):
         :rtype: str
 
         """
-        return hashlib.md5(self._uri).digest()
+        return hashlib.md5(self._uri.encode('utf-8')).digest()
 
     def _psycopg2_connect(self, kwargs):
         """Return a psycopg2 connection for the specified kwargs. Extend for
