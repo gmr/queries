@@ -51,8 +51,6 @@ class Session(object):
     :param bool use_pool: Use the connection pool
 
     """
-    _ASYNC = False
-
     _from_pool = False
     _tpc_id = None
 
@@ -127,11 +125,13 @@ class Session(object):
         """
         if not self._conn:
             raise AssertionError('Connection not open')
-        self._conn.close()
+
         if self._use_pool:
-            pool.remove_connection(self._id)
-        self._conn = None
-        self._cursor = None
+            pool.remove_connection(self.pid, self._conn)
+
+        # Close the connection
+        self._conn.close()
+        self._conn, self._cursor = None, None
 
     @property
     def connection(self):
@@ -308,9 +308,13 @@ class Session(object):
         if self._cursor:
             self._cursor.close()
             self._cursor = None
+
         if self._conn:
-            pool.free_connection(self._id)
             self._conn = None
+
+        if self._use_pool:
+            pool.remove_session(self.pid, self)
+            pool.clean_pools()
 
     def _connect(self):
         """Connect to PostgreSQL, either by reusing a connection from the pool
@@ -320,20 +324,19 @@ class Session(object):
 
         """
         # Attempt to get a cached connection from the connection pool
-        if self._use_pool:
-            connection = pool.get_connection(self._id)
+        if self._use_pool and pool.has_idle_connection(self.pid):
+            connection = pool.get_connection(self.pid)
             if connection:
                 self._from_pool = True
                 return connection
 
         # Create a new PostgreSQL connection
         kwargs = utils.uri_to_kwargs(self._uri)
-        kwargs['async'] = self._ASYNC
-        connection = psycopg2.connect(**kwargs)
+        connection = self._psycopg2_connect(kwargs)
 
         # Add it to the pool, if pooling is enabled
         if self._use_pool:
-            pool.add_connection(self._id, connection)
+            pool.add_connection(self.pid, self, connection)
 
         # Added in because psycopg2ct connects and leaves the connection in
         # a weird state: consts.STATUS_DATESTYLE, returning from
@@ -358,13 +361,23 @@ class Session(object):
         return self._conn.cursor(cursor_factory=cursor_factory)
 
     @property
-    def _id(self):
-        """Return an ID to be used with the connection pool
+    def pid(self):
+        """Return a pool ID to be used with connection pooling
 
         :rtype: str
 
         """
         return hashlib.md5(self._uri).digest()
+
+    def _psycopg2_connect(self, kwargs):
+        """Return a psycopg2 connection for the specified kwargs. Extend for
+        use in async session adapters.
+
+        :param dict kwargs: Keyword connection args
+        :rtype: psycopg2.connection
+
+        """
+        return psycopg2.connect(**kwargs)
 
     @staticmethod
     def _register_json(connection):

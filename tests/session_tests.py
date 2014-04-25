@@ -2,11 +2,14 @@
 Tests for the session.Session class
 
 """
+import hashlib
 import mock
+import uuid
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
+import weakref
 
 import psycopg2
 from psycopg2 import extensions
@@ -29,8 +32,9 @@ class SessionTests(unittest.TestCase):
         self._reg_type = register_type
         self._reg_uuid = register_uuid
         self.uri = 'pgsql://postgres@127.0.0.1:5432/queries'
-        if self.uri in pool.CONNECTIONS:
-            del pool.CONNECTIONS[self.uri]
+        self.pid = hashlib.md5(self.uri).digest()
+        if self.pid in pool.Pools:
+            del pool.Pools[self.pid]
         self.client = session.Session(self.uri)
 
     def test_psycopg2_connection_invoked(self):
@@ -74,18 +78,12 @@ class SessionTests(unittest.TestCase):
 
     def test_connection_added_to_cache(self):
         """Ensure the connection is in the connection cache"""
-        self.assertIn(self.uri, pool.CONNECTIONS)
-
-    def test_connection_handle_in_cache(self):
-        """Ensure that the connection handle in cache is valid"""
-        self.assertEqual(pool.CONNECTIONS[self.uri]['handle'],
-                         self.client._conn)
+        self.assertIn(self.pid, pool.Pools)
 
     def test_cleanup_removes_client_from_cache(self):
         """Ensure that Session._cleanup frees the client in the cache"""
-        value = pool.CONNECTIONS[self.uri]['clients']
         self.client._cleanup()
-        self.assertEqual(pool.CONNECTIONS[self.uri]['clients'], value - 1)
+        self.assertNotIn(weakref.ref(self), pool.Pools[self.pid].sessions)
 
     @unittest.skipIf(not PYPY, 'PyPy only test')
     def test_conn_reset_if_pypy(self):
@@ -99,18 +97,20 @@ class SessionTests(unittest.TestCase):
             del self.client
             cleanup.assert_called_once_with()
 
-    @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extras.register_json')
     @mock.patch('psycopg2.extras.register_uuid')
-    def test_context_manager_creation(self, _uuid, _json, _type,):
+    @mock.patch('psycopg2.extensions.register_type')
+    def test_context_manager_creation(self, _uuid, _json, _type, _connect):
         """Ensure context manager returns self"""
         with session.Session(self.uri) as conn:
             self.assertIsInstance(conn, session.Session)
 
+    @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
     @mock.patch('psycopg2.extras.register_json')
     @mock.patch('psycopg2.extras.register_uuid')
-    def test_context_manager_cleanup(self, _uuid, _json, _type,):
+    def test_context_manager_cleanup(self, _uuid, _json, _type, _connect):
         """Ensure context manager cleans up after self"""
         with mock.patch('queries.session.Session._cleanup') as cleanup:
             with session.Session(self.uri):
@@ -123,11 +123,9 @@ class SessionTests(unittest.TestCase):
     @mock.patch('psycopg2.extras.register_uuid')
     def test_close_removes_from_cache(self, _uuid, _json, _type, _connect):
         """Ensure connection removed from cache on close"""
-        uri = 'pgsql://foo@bar:9999/baz'
-        pgsql = session.Session(uri)
-        self.assertIn(uri, pool.CONNECTIONS)
-        pgsql.close()
-        self.assertNotIn(uri, pool.CONNECTIONS)
+        conn = self.client._conn
+        self.client.close()
+        self.assertNotIn(conn, pool.Pools[self.pid].connections)
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
