@@ -19,7 +19,7 @@ Installation
 ------------
 queries is available via pypi and can be installed with easy_install or pip:
 
-..code:: bash
+.. code:: bash
 
     pip install queries
 
