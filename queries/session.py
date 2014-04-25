@@ -345,7 +345,6 @@ class Session(object):
             connection.reset()
 
         # Register the custom data types
-        self._register_json(connection)
         self._register_unicode(connection)
         self._register_uuid(connection)
 
@@ -378,18 +377,6 @@ class Session(object):
 
         """
         return psycopg2.connect(**kwargs)
-
-    @staticmethod
-    def _register_json(connection):
-        """Register the JSON extension from the psycopg2.extras module
-
-        :param psycopg2.connection connection: The connection to register on
-
-        """
-        try:
-            psycopg2.extras.register_json(conn_or_curs=connection)
-        except AttributeError:
-            LOGGER.info('No JSON support in this version of psycopg2')
 
     @staticmethod
     def _register_unicode(connection):

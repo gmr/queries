@@ -12,6 +12,7 @@ import uuid
 import weakref
 
 from queries import pool
+from queries import PYPY
 
 
 class AddConnectionTests(unittest.TestCase):
@@ -196,6 +197,7 @@ class RemoveSessionTests(unittest.TestCase):
         pool.remove_session(self.pid, self.session)
         self.assertNotIn(weakref.ref(self), pool.Pools[self.pid].sessions)
 
+    @unittest.skipIf(PYPY, 'weakref not immediate in pypy')
     def test_dead_weakref_removed(self):
         """Ensure a deleted session obj is not in the pool"""
         del self.session
