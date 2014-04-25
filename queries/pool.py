@@ -5,81 +5,157 @@ Implement basic connection pooling where connections are kept attached to this
 module and re-used when the Queries object is created.
 
 """
+import collections
+import logging
 import time
+import weakref
+
+LOGGER = logging.getLogger(__name__)
+
+# Max connections per-pool
+MAX_CONNECTIONS = 10
 
 # Time-to-live in the pool
 TTL = 60
 
-# Connection caching constants
-CLIENTS = 'clients'
-HANDLE = 'handle'
-LAST = 'last'
-CONNECTIONS = dict()
+# Connection pooling data structures
+Pools = dict()
+Pool = collections.namedtuple('Pool', ['connections', 'sessions', 'last_use'])
 
 
-def add_connection(uri, connection):
+def add_connection(pid, session, connection):
     """Add the connection to the module level connection dictionary. Will 
     return False if the connection is already in the pool.
 
-    :param str uri: The connection URI
+    :param str pid: The pool id
     :param psycopg2._psycopg.connection connection: PostgreSQL connection
-    :returns bool: Connection was added to the pool
+    :raises: ValueError
 
     """
-    global CONNECTIONS
-    if uri not in CONNECTIONS:
-        CONNECTIONS[uri] = {CLIENTS: 1, HANDLE: connection, LAST: 0}
-        return True
-    return False
+    global Pools
+    if pid not in Pools:
+        Pools[pid] = Pool(set(), set(), 0)
+
+    # Dont allow unbounded growth
+    if len(Pools[pid].connections) > MAX_CONNECTIONS:
+        raise ValueError('No room in the pool')
+
+    Pools[pid].connections.add(connection)
+    Pools[pid].sessions.add(weakref.ref(session))
 
 
-def check_for_unused_expired_connections():
-    """Check the module level connection cache for connections without any
-    clients and remove them if the TTL has passed.
-
-    """
-    global CONNECTIONS
-    for uri in list(CONNECTIONS.keys()):
-        if (not CONNECTIONS[uri][CLIENTS] and
-            (time.time() > CONNECTIONS[uri][LAST] + TTL)):
-            del CONNECTIONS[uri]
-
-
-def get_connection(uri):
-    """Check our global connection stack to see if we already have a
-    connection with the same exact connection parameters and use it if so.
-
-    :param str uri: The connection URI
-    :rtype: psycopg2._psycopg.connection or None
+def clean_pools():
+    """Clean the Pools, pruning out stale references to sessions and close any
+    pool connections when a pool is idle with no sessions. Empty pools will
+    be removed from the Pools stack.
 
     """
-    check_for_unused_expired_connections()
-    if uri in CONNECTIONS:
-        CONNECTIONS[uri][CLIENTS] += 1
-        return CONNECTIONS[uri][HANDLE]
-    return None
+    global Pools
+
+    threshold = time.time() - TTL
+    for pid in list(Pools.keys()):
+        # Prune any stale references to session objects
+        for session in list(Pools[pid].sessions):
+            if session() is None:
+                remove_session(pid, session)
+
+        # Close connections when the pool is idle with no sessions
+        if not Pools[pid].sessions and Pools[pid].last_use < threshold:
+            [c.close() for c in Pools[pid].connections]
+            [remove_connection(pid, c) for c in list(Pools[pid].connections)]
+
+        # Remove the pool if there are no connections
+        if not Pools[pid].connections:
+            LOGGER.debug('Pool %s removed', pid)
+            del Pools[pid]
 
 
-def free_connection(uri):
-    """Decrement our use counter for the hash and if it is the only one, delete
-    the cached connection.
+def connection_in_pool(pid, connection):
+    """Return True if the specific connection already exists in the pool
 
-    :param str uri: The connection URI
+    :param str pid: The pool id
+    :param psycopg2._psycopg.connection connection: Connection to check
+    :rtype: bool
 
     """
-    global CONNECTIONS
-    if uri in CONNECTIONS:
-        CONNECTIONS[uri][CLIENTS] -= 1
-        if not CONNECTIONS[uri][CLIENTS]:
-            CONNECTIONS[uri][LAST] = int(time.time())
+    return bool([c for c in Pools[pid].connections if c == connection])
 
 
-def remove_connection(uri):
-    """Remove the cached connection, explicitly closing it.
+def get_connection(pid):
+    """Return the first idle connection from the pool
 
-    :param str uri: The connection URI
+    :param str pid: The pool to return the connection from
+    :rtype: psycopg2._psycopg.connection|None
 
     """
-    global CONNECTIONS
-    if uri in CONNECTIONS:
-        del CONNECTIONS[uri]
+    if not has_pool(pid):
+        return None
+    connections = [c for c in Pools[pid].connections if not c.isexecuting()]
+    return connections[0] if connections else None
+
+
+def has_idle_connection(pid):
+    """Returns True if the connection has an idle connection that can be used.
+
+    :param str pid: The pool id
+    :rtype: bool
+
+    """
+    if not has_pool(pid):
+        return False
+    return bool([c for c in Pools[pid].connections if not c.isexecuting()])
+
+
+def has_pool(pid):
+    """Returns true if the pool exists
+
+    :param str pid: the pool id to check
+    :rtype: bool
+
+    """
+    return pid in Pools
+
+
+def remove_connection(pid, connection):
+    """Remove a connection from the pool
+
+    :param str pid: The pool id
+    :param psycopg2._psycopg.connection connection: Connection to remove
+
+    """
+    try:
+        Pools[pid].connections.remove(connection)
+    except KeyError:
+        pass
+
+
+def remove_session(pid, session):
+    """Remove a session from the pool and if the session set is empty, set the
+    last use time.
+
+    :param str pid: The pool id
+    :param queries.Session session: Session to remove
+
+    """
+    if pid not in Pools:
+        return
+    if not isinstance(session, weakref.ref):
+        session = weakref.ref(session)
+    try:
+        Pools[pid].sessions.remove(session)
+    except KeyError:
+        pass
+    if not Pools[pid].sessions:
+        Pools[pid] = Pools[pid]._replace(last_use=int(time.time()))
+
+
+def session_in_pool(pid, session):
+    """Return True if the specific session reference already exists in the pool
+
+    :param str pid: The pool id
+    :param queries.Session session: Session to check
+    :rtype: bool
+
+    """
+    session = weakref.ref(session)
+    return bool([s for s in Pools[pid].sessions if session == s])
