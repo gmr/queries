@@ -46,6 +46,7 @@ class SessionTests(unittest.TestCase):
                        'password': None}
         self._connect.assert_called_once_with(**expectation)
 
+    @unittest.skipIf(PYPY, "Not supported in PyPy")
     def test_psycopg2_register_json(self):
         """Ensure that the JSON extension was registered"""
         self._reg_json.assert_called_once_with(conn_or_curs=self.client._conn)

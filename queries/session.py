@@ -386,7 +386,10 @@ class Session(object):
         :param psycopg2.connection connection: The connection to register on
 
         """
-        psycopg2.extras.register_json(conn_or_curs=connection)
+        try:
+            psycopg2.extras.register_json(conn_or_curs=connection)
+        except AttributeError:
+            LOGGER.info('No JSON support in this version of psycopg2')
 
     @staticmethod
     def _register_unicode(connection):
