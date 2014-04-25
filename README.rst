@@ -30,41 +30,48 @@ Requirements
 Examples
 --------
 
-Executing a query and fetching data:
+Executing a query and fetching data, connecting by default to `localhost` as
+the current user with a database matching the username:
 
 .. code:: python
 
-    import queries
+    >>> import pprint
+    >>> import queries
+    >>>
+    >>> for row in queries.query('SELECT * FROM foo'):
+    ...     pprint.pprint(row)
+    ...
+    {'id': 1, 'name': u'Gavin'}
+    {'id': 2, 'name': u'Bob'}
+    {'id': 3, 'name': u'Joe'}
 
-    uri = 'pgsql://postgres@localhost/postgres'
-    for row in queries.execute(uri, 'SELECT 1 as value'):
-        print(data['value'])
+Iterate over a stored procedure:
+
+.. code:: python
+
+    >>> import pprint
+    >>> import queries
+    >>>
+    >>> for row in queries.callproc('now'):
+    ...     pprint.pprint(row)
+    ...
+    {'now': datetime.datetime(2014, 4, 25, 12, 52, 0, 133279,
+     tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-240, name=None))}
 
 Using the Session object as a context manager:
 
 .. code:: python
 
-    import queries
-
-    with queries.Session('pgsql://postgres@localhost/postgres') as session:
-        for row in session.Query('SELECT * FROM table'):
-            print row
-
-Creating a Session object for transactional behavior:
-
-.. code:: python
-
-    import queries
-
-    uri = 'pgsql://postgres@localhost/postgres'
-    pgsql = queries.Session(uri)
-    pgsql.prepare()
-    pgsql.callproc('SELECT foo FROM bar()')
-    pgsql.commit()
-
-
-
-
+    >>> import pprint
+    >>> import queries
+    >>>
+    >>> with queries.Session() as s:
+    ...     for row in s.query('SELECT * FROM names'):
+    ...         pprint.pprint(row)
+    ...
+    {'id': 1, 'name': u'Jacob'}
+    {'id': 2, 'name': u'Mason'}
+    {'id': 3, 'name': u'Ethan'}
 
 
 .. |Version| image:: https://badge.fury.io/py/queries.svg?
