@@ -2,6 +2,15 @@
 Methods exposing a simpler to use API for interacting with PostgreSQL
 
 """
+import logging
+
+from queries.session import Session
+
+from queries import DEFAULT_URI
+
+
+def execute(sql, uri=DEFAULT_URI):
+    pass
 
 
 def uri(host='localhost', port='5432', dbname='postgres', user='postgres',

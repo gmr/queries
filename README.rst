@@ -40,15 +40,15 @@ Executing a query and fetching data:
     for row in queries.execute(uri, 'SELECT 1 as value'):
         print(data['value'])
 
-Creating a Postgres object for transactional behavior:
+Creating a Session object for transactional behavior:
 
 .. code:: python
 
     import queries
 
     uri = 'pgsql://postgres@localhost/postgres'
-    pgsql = queries.Postgres(uri)
-    pgsql.create_transaction()
+    pgsql = queries.Session(uri)
+    pgsql.prepare()
     pgsql.callproc('SELECT foo FROM bar()')
     pgsql.commit()
 

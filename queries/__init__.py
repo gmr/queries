@@ -42,7 +42,8 @@ logging.getLogger('queries').addHandler(NullHandler())
 DEFAULT_URI = 'pgsql://postgres:localhost:5432/postgres'
 
 # Mappings to queries classes and methods
-from queries.core import Postgres
+from queries.session import Session
+from queries.simple import execute
 from queries.simple import uri
 
 # Expose exceptions so clients do not need to import psycopg2 too

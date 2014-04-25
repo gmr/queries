@@ -14,13 +14,26 @@ from queries import pool, PYPY
 LOGGER = logging.getLogger(__name__)
 
 
-class Postgres(object):
+class Session(object):
     """Core queries
 
     Uses a module level cache of connections to reduce overhead.
 
     """
     _from_pool = False
+
+    # Connection status constants
+    BEGIN = extensions.STATUS_BEGIN
+    INTRANS = extensions.STATUS_IN_TRANSACTION
+    PREPARED = extensions.STATUS_PREPARED
+    READY = extensions.STATUS_READY
+
+    # Transaction status constants
+    TX_ACTIVE = extensions.TRANSACTION_STATUS_ACTIVE
+    TX_IDLE = extensions.TRANSACTION_STATUS_IDLE
+    TX_INERROR = extensions.TRANSACTION_STATUS_INERROR
+    TX_INTRANS = extensions.TRANSACTION_STATUS_INTRANS
+    TX_UNKNOWN = extensions.TRANSACTION_STATUS_UNKNOWN
 
     def __init__(self, uri,
                  cursor_factory=extras.RealDictCursor,
@@ -67,20 +80,9 @@ class Postgres(object):
         """
         self._cleanup()
 
-    def close(self):
-        """Explicitly close the connection and remove it from the connection
-        cache.
-
-        :raises: AssertionError
-
-        """
-        if not self._conn:
-            raise AssertionError('Connection not open')
-        self._conn.close()
-        if self._use_pool:
-            pool.remove_connection(self._uri)
-        self._conn = None
-        self._cursor = None
+    @property
+    def backend_pid(self):
+        return self._conn.get_backend_pid()
 
     @property
     def connection(self):
@@ -99,6 +101,69 @@ class Postgres(object):
 
         """
         return self._cursor
+
+    def cancel(self):
+        self._conn.cancel()
+
+    def commit(self):
+        self._conn.commit()
+
+    def listen(self, channel):
+        pass
+
+    @property
+    def encoding(self):
+        return self._conn.encoding
+
+    def set_encoding(self, value='UTF-8'):
+        self._conn.set_client_encoding(value)
+
+    def rollback(self):
+        self._conn.rollback()
+
+    def create_transaction(self):
+        self._conn.autocommit = False
+        self._cursor.execute('')
+
+    @property
+    def notices(self):
+        return self._conn.notices
+
+    @property
+    def status(self):
+        return self._conn.status
+
+    @property
+    def tx_status(self):
+        """Return the transaction status for the current connection.
+
+        Values should be one of:
+
+        - queries.Session.TX_IDLE: Idle without an active session
+        - queries.Session.TX_ACTIVE: A command is currently in progress
+        - queries.Session.TX_INTRANS: Idle in a valid transaction
+        - queries.Session.TX_INERROR: Idle in a failed transaction
+        - queries.Session.TX_UNKNOWN: Connection error
+
+        :rtype: int
+
+        """
+        return self._conn.get_transaction_status()
+
+    def close(self):
+        """Explicitly close the connection and remove it from the connection
+        cache.
+
+        :raises: AssertionError
+
+        """
+        if not self._conn:
+            raise AssertionError('Connection not open')
+        self._conn.close()
+        if self._use_pool:
+            pool.remove_connection(self._uri)
+        self._conn = None
+        self._cursor = None
 
     def _autocommit(self):
         """Set the isolation level automatically to commit after every query"""

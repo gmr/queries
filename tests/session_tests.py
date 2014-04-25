@@ -1,5 +1,5 @@
 """
-Tests for the core Queries class
+Tests for the session.Session class
 
 """
 import mock
@@ -11,12 +11,12 @@ except ImportError:
 import psycopg2
 from psycopg2 import extensions
 
-from queries import core
+from queries import session
 from queries import pool
 from queries import PYPY
 
 
-class PostgresTests(unittest.TestCase):
+class SessionTests(unittest.TestCase):
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
@@ -29,7 +29,7 @@ class PostgresTests(unittest.TestCase):
         self.uri = 'pgsql://postgres@127.0.0.1:5432/queries'
         if self.uri in pool.CONNECTIONS:
             del pool.CONNECTIONS[self.uri]
-        self.client = core.Postgres(self.uri)
+        self.client = session.Session(self.uri)
 
     def test_psycopg2_connection_invoked(self):
         """Ensure that psycopg2.connect was invoked"""
@@ -54,11 +54,11 @@ class PostgresTests(unittest.TestCase):
         self.assertTrue(self.client._conn.autocommit)
 
     def test_connection_property(self):
-        """Test value of Postgres.connection property"""
+        """Test value of Session.connection property"""
         self.assertEqual(self.client._conn, self.client.connection)
 
     def test_cursor_property(self):
-        """Test value of Postgres.connection property"""
+        """Test value of Session.connection property"""
         self.assertEqual(self.client._cursor, self.client.cursor)
 
     def test_connection_added_to_cache(self):
@@ -71,7 +71,7 @@ class PostgresTests(unittest.TestCase):
                          self.client._conn)
 
     def test_cleanup_removes_client_from_cache(self):
-        """Ensure that Postgres._cleanup frees the client in the cache"""
+        """Ensure that Session._cleanup frees the client in the cache"""
         value = pool.CONNECTIONS[self.uri]['clients']
         self.client._cleanup()
         self.assertEqual(pool.CONNECTIONS[self.uri]['clients'], value - 1)
@@ -83,8 +83,8 @@ class PostgresTests(unittest.TestCase):
 
     @unittest.skipIf(PYPY, 'Not invoked in PyPy')
     def test_del_invokes_cleanup(self):
-        """Deleting Postgres instance invokes Postgres._cleanup"""
-        with mock.patch('queries.core.Postgres._cleanup') as cleanup:
+        """Deleting Session instance invokes Session._cleanup"""
+        with mock.patch('queries.session.Session._cleanup') as cleanup:
             del self.client
             cleanup.assert_called_once_with()
 
@@ -92,15 +92,15 @@ class PostgresTests(unittest.TestCase):
     @mock.patch('psycopg2.extras.register_uuid')
     def test_context_manager_creation(self, _reg_uuid, _reg_type):
         """Ensure context manager returns self"""
-        with core.Postgres(self.uri) as conn:
-            self.assertIsInstance(conn, core.Postgres)
+        with session.Session(self.uri) as conn:
+            self.assertIsInstance(conn, session.Session)
 
     @mock.patch('psycopg2.extensions.register_type')
     @mock.patch('psycopg2.extras.register_uuid')
     def test_context_manager_cleanup(self, _reg_uuid, _reg_type):
         """Ensure context manager cleans up after self"""
-        with mock.patch('queries.core.Postgres._cleanup') as cleanup:
-            with core.Postgres(self.uri):
+        with mock.patch('queries.session.Session._cleanup') as cleanup:
+            with session.Session(self.uri):
                 pass
         cleanup.assert_called_with()
 
@@ -110,7 +110,7 @@ class PostgresTests(unittest.TestCase):
     def test_close_removes_from_cache(self, _reg_uuid, _reg_type, _connect):
         """Ensure connection removed from cache on close"""
         uri = 'pgsql://foo@bar:9999/baz'
-        pgsql = core.Postgres(uri)
+        pgsql = session.Session(uri)
         self.assertIn(uri, pool.CONNECTIONS)
         pgsql.close()
         self.assertNotIn(uri, pool.CONNECTIONS)
@@ -120,35 +120,35 @@ class PostgresTests(unittest.TestCase):
     @mock.patch('psycopg2.extras.register_uuid')
     def test_close_invokes_connection_close(self, _reg_uuid, _reg_type, connect):
         """Ensure close calls connection.close"""
-        conn = core.Postgres('pgsql://foo@bar:9999/baz')
+        sess = session.Session('pgsql://foo@bar:9999/baz')
         close_mock = mock.Mock()
-        conn._conn.close = close_mock
-        conn.close()
+        sess._conn.close = close_mock
+        sess.close()
         close_mock .assert_called_once_with()
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
     @mock.patch('psycopg2.extras.register_uuid')
     def test_close_sets_conn_to_none(self, _reg_uuid, _reg_type, connect):
-        """Ensure Postgres._conn is None after close"""
-        conn = core.Postgres('pgsql://foo@bar:9999/baz')
-        conn.close()
-        self.assertIsNone(conn._conn)
+        """Ensure Session._conn is None after close"""
+        sess = session.Session('pgsql://foo@bar:9999/baz')
+        sess.close()
+        self.assertIsNone(sess._conn)
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
     @mock.patch('psycopg2.extras.register_uuid')
     def test_close_sets_cursor_to_none(self, _reg_uuid, _reg_type, connect):
-        """Ensure Postgres._cursor is None after close"""
-        conn = core.Postgres('pgsql://foo@bar:9999/baz')
-        conn.close()
-        self.assertIsNone(conn._cursor)
+        """Ensure Session._cursor is None after close"""
+        sess = session.Session('pgsql://foo@bar:9999/baz')
+        sess.close()
+        self.assertIsNone(sess._cursor)
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
     @mock.patch('psycopg2.extras.register_uuid')
     def test_close_raises_when_closed(self, _reg_uuid, _reg_type, _conn):
-        """Ensure Postgres._cursor is None after close"""
-        conn = core.Postgres('pgsql://foo@bar:9999/baz')
-        conn.close()
-        self.assertRaises(AssertionError, conn.close)
+        """Ensure Session._cursor is None after close"""
+        sess = session.Session('pgsql://foo@bar:9999/baz')
+        sess.close()
+        self.assertRaises(AssertionError, sess.close)
