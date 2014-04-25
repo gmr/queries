@@ -20,10 +20,12 @@ class SessionTests(unittest.TestCase):
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_json')
     @mock.patch('psycopg2.extras.register_uuid')
-    def setUp(self, register_uuid, register_type, connect):
+    def setUp(self, register_uuid, register_json, register_type, connect):
         self._connect = connect
         self._connect.reset = mock.Mock()
+        self._reg_json = register_json
         self._reg_type = register_type
         self._reg_uuid = register_uuid
         self.uri = 'pgsql://postgres@127.0.0.1:5432/queries'
@@ -33,21 +35,26 @@ class SessionTests(unittest.TestCase):
 
     def test_psycopg2_connection_invoked(self):
         """Ensure that psycopg2.connect was invoked"""
-        self._connect.assert_called_once_with(self.uri)
+        expectation = {'user': 'postgres',
+                       'dbname': 'queries',
+                       'host': '127.0.0.1',
+                       'port': 5432,
+                       'password': None}
+        self._connect.assert_called_once_with(**expectation)
 
     def test_psycopg2_register_uuid(self):
         """Ensure that the UUID extension was registered"""
-        self._reg_uuid.assert_called_once_with(self.client._conn)
+        self._reg_uuid.assert_called_once_with(conn_or_curs=self.client._conn)
 
     def test_psycopg2_register_unicode_type(self):
         """Ensure that the UNICODE type was registered"""
         self._reg_type.assert_any_call(psycopg2.extensions.UNICODE,
-                                       self.client._cursor)
+                                       self.client._conn)
 
     def test_psycopg2_register_unicode_array_type(self):
         """Ensure that the UNICODEARRAY type was registered"""
         self._reg_type.assert_any_call(psycopg2.extensions.UNICODEARRAY,
-                                       self.client._cursor)
+                                       self.client._conn)
 
     def test_default_autocommit_value(self):
         """Connection should be autocommit by default"""
@@ -89,15 +96,17 @@ class SessionTests(unittest.TestCase):
             cleanup.assert_called_once_with()
 
     @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_json')
     @mock.patch('psycopg2.extras.register_uuid')
-    def test_context_manager_creation(self, _reg_uuid, _reg_type):
+    def test_context_manager_creation(self, _uuid, _json, _type,):
         """Ensure context manager returns self"""
         with session.Session(self.uri) as conn:
             self.assertIsInstance(conn, session.Session)
 
     @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_json')
     @mock.patch('psycopg2.extras.register_uuid')
-    def test_context_manager_cleanup(self, _reg_uuid, _reg_type):
+    def test_context_manager_cleanup(self, _uuid, _json, _type,):
         """Ensure context manager cleans up after self"""
         with mock.patch('queries.session.Session._cleanup') as cleanup:
             with session.Session(self.uri):
@@ -106,8 +115,9 @@ class SessionTests(unittest.TestCase):
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_json')
     @mock.patch('psycopg2.extras.register_uuid')
-    def test_close_removes_from_cache(self, _reg_uuid, _reg_type, _connect):
+    def test_close_removes_from_cache(self, _uuid, _json, _type, _connect):
         """Ensure connection removed from cache on close"""
         uri = 'pgsql://foo@bar:9999/baz'
         pgsql = session.Session(uri)
@@ -117,8 +127,9 @@ class SessionTests(unittest.TestCase):
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_json')
     @mock.patch('psycopg2.extras.register_uuid')
-    def test_close_invokes_connection_close(self, _reg_uuid, _reg_type, connect):
+    def test_close_invokes_connection_close(self, _uuid, _json, _type, connect):
         """Ensure close calls connection.close"""
         sess = session.Session('pgsql://foo@bar:9999/baz')
         close_mock = mock.Mock()
@@ -128,8 +139,9 @@ class SessionTests(unittest.TestCase):
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_json')
     @mock.patch('psycopg2.extras.register_uuid')
-    def test_close_sets_conn_to_none(self, _reg_uuid, _reg_type, connect):
+    def test_close_sets_conn_to_none(self, _uuid, _json, _type, connect):
         """Ensure Session._conn is None after close"""
         sess = session.Session('pgsql://foo@bar:9999/baz')
         sess.close()
@@ -137,17 +149,19 @@ class SessionTests(unittest.TestCase):
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')
+    @mock.patch('psycopg2.extras.register_json')
     @mock.patch('psycopg2.extras.register_uuid')
-    def test_close_sets_cursor_to_none(self, _reg_uuid, _reg_type, connect):
+    def test_close_sets_cursor_to_none(self, _uuid, _json, _type, connect):
         """Ensure Session._cursor is None after close"""
         sess = session.Session('pgsql://foo@bar:9999/baz')
         sess.close()
         self.assertIsNone(sess._cursor)
 
     @mock.patch('psycopg2.connect')
+    @mock.patch('psycopg2.extras.register_json')
     @mock.patch('psycopg2.extensions.register_type')
     @mock.patch('psycopg2.extras.register_uuid')
-    def test_close_raises_when_closed(self, _reg_uuid, _reg_type, _conn):
+    def test_close_raises_when_closed(self, _uuid, _json, _type, _conn):
         """Ensure Session._cursor is None after close"""
         sess = session.Session('pgsql://foo@bar:9999/baz')
         sess.close()
