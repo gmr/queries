@@ -3,7 +3,8 @@ Queries
 PostgreSQL database access simplified.
 
 Queries is an opinionated wrapper for interfacing with PostgreSQL that offers
-caching of connections and support for PyPy via psycopg2ct.
+caching of connections and support for PyPy via psycopg2ct. Queries supports
+Python versions 2.6+ and 3.2+.
 
 The core `queries.Queries` class will automatically register support for UUIDs,
 Unicode and Unicode arrays.
@@ -11,8 +12,6 @@ Unicode and Unicode arrays.
 Without requiring any additional code, queries offers connection pooling that
 allows for multiple modules in the same interpreter to use the same PostgreSQL
 connection.
-
-Queries provides a core
 
 |Version| |Downloads| |Status|
 
