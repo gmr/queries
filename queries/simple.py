@@ -2,15 +2,51 @@
 Methods exposing a simpler to use API for interacting with PostgreSQL
 
 """
-import logging
-
 from queries.session import Session
 
 from queries import DEFAULT_URI
 
 
-def execute(sql, uri=DEFAULT_URI):
-    pass
+def callproc(name, parameters=None, uri=DEFAULT_URI):
+    """Call a stored procedure on the server and return an iterator of the
+    result set for easy access to the data.
+
+    .. code:: python
+
+        for row in session.callproc('now'):
+            print row
+
+    :param str name: The procedure name
+    :param list parameters: The list of parameters to pass in
+    :param str uri: The PostgreSQL connection URI
+    :return: iterator
+
+    """
+    with Session(uri) as session:
+        for row in session.callproc(name, parameters):
+            yield row
+
+
+def query(sql, parameters=None, uri=DEFAULT_URI):
+    """A generator to issue a query on the server, mogrifying the
+    parameters against the sql statement and returning the results as an
+    iterator.
+
+    .. code:: python
+
+        for row in queries.query('SELECT * FROM foo WHERE bar=%(bar)s',
+                                 {'bar': 'baz'}):
+          print row
+
+    :param str sql: The SQL statement
+    :param dict parameters: A dictionary of query parameters
+    :param str uri: The PostgreSQL connection URI
+    :rtype: iterator
+
+    """
+    with Session(uri) as session:
+        for row in session.query(sql, parameters):
+            yield row
 
 
 def uri(host='localhost', port='5432', dbname='postgres', user='postgres',
