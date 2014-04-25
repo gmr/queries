@@ -39,12 +39,18 @@ except ImportError:
 logging.getLogger('queries').addHandler(NullHandler())
 
 # Defaults
-DEFAULT_URI = 'pgsql://postgres:localhost:5432/postgres'
+DEFAULT_URI = 'pgsql://localhost:5432'
 
 # Mappings to queries classes and methods
 from queries.session import Session
-from queries.simple import execute
+from queries.simple import callproc
+from queries.simple import query
 from queries.simple import uri
+
+# For ease of access to different cursor types
+from psycopg2.extras import DictCursor
+from psycopg2.extras import NamedTupleCursor
+from psycopg2.extras import RealDictCursor
 
 # Expose exceptions so clients do not need to import psycopg2 too
 from psycopg2 import DataError
