@@ -79,6 +79,11 @@ Using the Session object as a context manager:
     {'id': 2, 'name': u'Mason'}
     {'id': 3, 'name': u'Ethan'}
 
+History
+-------
+Queries is a fork and enhancement of `pgsql_wrapper <https://pypi.python.org/pypi/pgsql_wrapper`_,
+which can be found in the main GitHub repository of Queries as tags prior to version 1.2.0.
+
 
 .. |Version| image:: https://badge.fury.io/py/queries.svg?
    :target: http://badge.fury.io/py/queries
