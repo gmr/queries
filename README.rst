@@ -15,6 +15,10 @@ connection.
 
 |Version| |Downloads| |Status|
 
+Documentation
+-------------
+Documentation is available at https://queries.readthedocs.org
+
 Installation
 ------------
 queries is available via pypi and can be installed with easy_install or pip:
@@ -40,14 +44,14 @@ the current user with a database matching the username:
     >>> import pprint
     >>> import queries
     >>>
-    >>> for row in queries.query('SELECT * FROM foo'):
+    >>> for row in queries.query('SELECT * FROM names'):
     ...     pprint.pprint(row)
     ...
-    {'id': 1, 'name': u'Gavin'}
-    {'id': 2, 'name': u'Bob'}
-    {'id': 3, 'name': u'Joe'}
+    {'id': 1, 'name': u'Jacob'}
+    {'id': 2, 'name': u'Mason'}
+    {'id': 3, 'name': u'Ethan'}
 
-Iterate over a stored procedure:
+Iterate over the results from calling a stored procedure:
 
 .. code:: python
 
