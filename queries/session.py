@@ -89,8 +89,7 @@ class Session(object):
         caches, etc.
 
         """
-        #self._cleanup()
-        pass
+        self._cleanup()
 
     def __enter__(self):
         """For use as a context manager, return a handle to this object
@@ -106,8 +105,7 @@ class Session(object):
         caches, etc.
 
         """
-        #self._cleanup()
-        pass
+        self._cleanup()
 
     @property
     def backend_pid(self):
