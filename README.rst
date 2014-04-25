@@ -19,7 +19,9 @@ Installation
 ------------
 queries is available via pypi and can be installed with easy_install or pip:
 
-pip install queries
+..code:: bash
+
+    pip install queries
 
 Requirements
 ------------
