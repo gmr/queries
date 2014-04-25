@@ -53,11 +53,11 @@ Creating a Postgres object for transactional behavior:
     pgsql.commit()
 
 
-.. |Version| image:: https://badge.fury.io/py/pgsql_wrapper.svg?
-   :target: http://badge.fury.io/py/pgsql_wrapper
+.. |Version| image:: https://badge.fury.io/py/queries.svg?
+   :target: http://badge.fury.io/py/queries
 
-.. |Status| image:: https://travis-ci.org/gmr/pgsql_wrapper.svg?branch=master
-   :target: https://travis-ci.org/gmr/pgsql_wrapper
+.. |Status| image:: https://travis-ci.org/gmr/queries.svg?branch=master
+   :target: https://travis-ci.org/gmr/queries
 
-.. |Downloads| image:: https://pypip.in/d/pgsql_wrapper/badge.svg?
-   :target: https://pypi.python.org/pypi/pgsql_wrapper
+.. |Downloads| image:: https://pypip.in/d/queries/badge.svg?
+   :target: https://pypi.python.org/pypi/queries
