@@ -5,11 +5,7 @@ Implement basic connection pooling where connections are kept attached to this
 module and re-used when the Queries object is created.
 
 """
-import logging
 import time
-
-
-LOGGER = logging.getLogger()
 
 # Time-to-live in the pool
 TTL = 60
@@ -33,7 +29,6 @@ def add_connection(uri, connection):
     global CONNECTIONS
     if uri not in CONNECTIONS:
         CONNECTIONS[uri] = {CLIENTS: 1, HANDLE: connection, LAST: 0}
-        LOGGER.info('%s: added to module pool', uri)
         return True
     return False
 
@@ -47,7 +42,6 @@ def check_for_unused_expired_connections():
     for uri in list(CONNECTIONS.keys()):
         if (not CONNECTIONS[uri][CLIENTS] and
             (time.time() > CONNECTIONS[uri][LAST] + TTL)):
-            LOGGER.info('Removing expired connection: %s', uri)
             del CONNECTIONS[uri]
 
 
@@ -61,7 +55,6 @@ def get_connection(uri):
     """
     check_for_unused_expired_connections()
     if uri in CONNECTIONS:
-        LOGGER.debug('Returning cached connection and incrementing counter')
         CONNECTIONS[uri][CLIENTS] += 1
         return CONNECTIONS[uri][HANDLE]
     return None
@@ -76,10 +69,8 @@ def free_connection(uri):
     """
     global CONNECTIONS
     if uri in CONNECTIONS:
-        LOGGER.debug('%s: decrementing client count', uri)
         CONNECTIONS[uri][CLIENTS] -= 1
         if not CONNECTIONS[uri][CLIENTS]:
-            LOGGER.debug('%s: updating last client time', uri)
             CONNECTIONS[uri][LAST] = int(time.time())
 
 
@@ -91,5 +82,4 @@ def remove_connection(uri):
     """
     global CONNECTIONS
     if uri in CONNECTIONS:
-        LOGGER.debug('%s: decrementing client count', uri)
         del CONNECTIONS[uri]
