@@ -15,4 +15,4 @@ class PYPYDetectionTests(unittest.TestCase):
 
     def test_pypy_flag(self):
         """PYPY flag is set properly"""
-        self.assertEquals(PYPY, platform.python_implementation() == 'PyPy')
+        self.assertEqual(PYPY, platform.python_implementation() == 'PyPy')

@@ -76,8 +76,11 @@ def uri_to_kwargs(uri):
     values = parse_qs(parsed.query)
     for k in [k for k in values if k in KEYWORDS]:
         kwargs[k] = values[k][0] if len(values[k]) == 1 else values[k]
-        if kwargs[k].isdigit():
-            kwargs[k] = int(kwargs[k])
+        try:
+            if kwargs[k].isdigit():
+                kwargs[k] = int(kwargs[k])
+        except AttributeError:
+            pass
     return kwargs
 
 
