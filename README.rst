@@ -79,11 +79,17 @@ Using the Session object as a context manager:
     {'id': 2, 'name': u'Mason'}
     {'id': 3, 'name': u'Ethan'}
 
+Inspiration
+-----------
+Queries is inspired by `Kenneth Reitz's <https://github.com/kennethreitz/>`_ awesome
+work on `requests <http://docs.python-requests.org/en/latest/>`_.
+
 History
 -------
-Queries is a fork and enhancement of `pgsql_wrapper <https://pypi.python.org/pypi/pgsql_wrapper`_,
-which can be found in the main GitHub repository of Queries as tags prior to version 1.2.0.
+Queries is a fork and enhancement of pgsql_wrapper_, which can be found in the
+main GitHub repository of Queries as tags prior to version 1.2.0.
 
+.. _pgsql_wrapper: https://pypi.python.org/pypi/pgsql_wrapper
 
 .. |Version| image:: https://badge.fury.io/py/queries.svg?
    :target: http://badge.fury.io/py/queries
