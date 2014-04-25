@@ -40,6 +40,16 @@ Executing a query and fetching data:
     for row in queries.execute(uri, 'SELECT 1 as value'):
         print(data['value'])
 
+Using the Session object as a context manager:
+
+.. code:: python
+
+    import queries
+
+    with queries.Session('pgsql://postgres@localhost/postgres') as session:
+        for row in session.Query('SELECT * FROM table'):
+            print row
+
 Creating a Session object for transactional behavior:
 
 .. code:: python
@@ -51,6 +61,10 @@ Creating a Session object for transactional behavior:
     pgsql.prepare()
     pgsql.callproc('SELECT foo FROM bar()')
     pgsql.commit()
+
+
+
+
 
 
 .. |Version| image:: https://badge.fury.io/py/queries.svg?
