@@ -42,6 +42,10 @@ class SessionTests(unittest.TestCase):
                        'password': None}
         self._connect.assert_called_once_with(**expectation)
 
+    def test_psycopg2_register_json(self):
+        """Ensure that the JSON extension was registered"""
+        self._reg_json.assert_called_once_with(conn_or_curs=self.client._conn)
+
     def test_psycopg2_register_uuid(self):
         """Ensure that the UUID extension was registered"""
         self._reg_uuid.assert_called_once_with(conn_or_curs=self.client._conn)
