@@ -9,12 +9,12 @@ else:
     install_requires = ['psycopg2']
 
 
-setup(name='pgsql_wrapper',
+setup(name='queries',
       version='1.2.0',
-      description="PostgreSQL / psycopg2 caching wrapper class",
+      description="Simplified PostgreSQL client built upon Psycopg2",
       maintainer="Gavin M. Roy",
       maintainer_email="gavinmroy@gmail.com",
-      url="https://github.com/gmr/pgsql_wrapper",
+      url="https://github.com/gmr/queries",
       install_requires=install_requires,
       license=open('LICENSE').read(),
       package_data={'': ['LICENSE', 'README.md']},
