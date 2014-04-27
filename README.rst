@@ -1,9 +1,16 @@
-Queries
-=======
-PostgreSQL database access simplified.
+Queries: PostgreSQL Simplified
+==============================
 
-Queries is an opinionated wrapper of the psycopg2_ library for interfacing with
-PostgreSQL. Key features include:
+*Queries* is a BSD licensed opinionated wrapper of the psycopg2_ library for
+interacting with PostgreSQL.
+
+The popular psycopg2_ package is a full-featured python client. However there are
+multiple steps, which are often repeated, to get to the point where you can
+execute queries on the PostgreSQL server. Queries aims to reduce the complexity
+while adding additional features to make writing PostgreSQL client applications
+both fast and easy. Check out the `Usage`_ section below to see how easy it can be.
+
+Key features include:
 
 - Simplified API
 - Support of Python 2.6+ and 3.2+
@@ -23,7 +30,7 @@ Documentation is available at https://queries.readthedocs.org
 
 Installation
 ------------
-queries is available via pypi and can be installed with easy_install or pip:
+Queries is available via pypi_ and can be installed with easy_install or pip:
 
 .. code:: bash
 
@@ -51,7 +58,7 @@ When specifying a URI, if you omit the username and database name to connect
 with, Queries will use the current OS username for both. You can also omit the
 URI when connecting to connect to localhost on port 5432 as the current OS user,
 connecting to a database named for the current user. For example, if your
-username is "fred" and you omit the URI when issuing ``queries.query`` the URI
+username is ``fred`` and you omit the URI when issuing ``queries.query`` the URI
 that is constructed would be ``pgsql://fred@localhost:5432/fred``.
 
 Here are a few examples of using the Queries simple API:
@@ -151,6 +158,7 @@ History
 Queries is a fork and enhancement of pgsql_wrapper_, which can be found in the
 main GitHub repository of Queries as tags prior to version 1.2.0.
 
+.. _pypi: https://pypi.python.org/pypi/queries
 .. _psycopg2: https://pypi.python.org/pypi/psycopg2
 .. _documentation: https://queries.readthedocs.org
 .. _URIs: http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING
