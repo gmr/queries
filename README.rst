@@ -114,7 +114,7 @@ be used as a context manager.
     {'id': 3, 'name': u'Ethan'}
 
 In addition to providing a Pythonic, synchronous client API for PostgreSQL,
-Queries provides a very similar asynchronous API for use with Tornado_ [*]_.
+Queries provides a very similar asynchronous API for use with Tornado [1]_.
 The only major difference API difference between ``queries.TornadoSession`` and
 ``queries.Session`` is the ``TornadoSession.query`` and ``TornadoSession.callproc``
 methods return the entire result set instead of acting as an iterator over
@@ -145,7 +145,7 @@ Tornado_ web application to send a JSON payload with the query result set.
         application.listen(8888)
         ioloop.IOLoop.instance().start()
 
-.. [*] Simple API methods are not asynchronous and should not be used in an asynchronous Tornado application.
+.. [1] Simple API methods are not asynchronous and should not be used in an asynchronous Tornado application.
 
 Inspiration
 -----------
