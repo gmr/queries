@@ -15,12 +15,12 @@ Key features include:
 - Simplified API
 - Support of Python 2.6+ and 3.2+
 - PyPy support via psycopg2ct
-- Internal connection pooling
 - Asynchronous support for Tornado_
-- Automatic registration of UUIDs, Unicode and Unicode Arrays
-- Ability to directly access psycopg2 ``connection`` and ``cursor`` objects
 - Connection information provided by URI
 - Query results delivered as a generator based iterators
+- Automatically registered data-type support for UUIDs, Unicode and Unicode Arrays
+- Ability to directly access psycopg2 ``connection`` and ``cursor`` objects
+- Internal connection pooling
 
 |Version| |Downloads| |Status|
 
