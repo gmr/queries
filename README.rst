@@ -4,9 +4,9 @@ Queries: PostgreSQL Simplified
 *Queries* is a BSD licensed opinionated wrapper of the psycopg2_ library for
 interacting with PostgreSQL.
 
-The popular psycopg2_ package is a full-featured python client. However there are
-multiple steps, which are often repeated, to get to the point where you can
-execute queries on the PostgreSQL server. Queries aims to reduce the complexity
+The popular psycopg2_ package is a full-featured python client. Unfortunately
+as a developer, you're often repeating the same steps to get started with your
+applications that use it. Queries aims to reduce the complexity of psycopg2
 while adding additional features to make writing PostgreSQL client applications
 both fast and easy. Check out the `Usage`_ section below to see how easy it can be.
 
