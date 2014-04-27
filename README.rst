@@ -52,18 +52,16 @@ the current user with a database matching the username:
     {'id': 2, 'name': u'Mason'}
     {'id': 3, 'name': u'Ethan'}
 
-Iterate over the results from calling a stored procedure:
+Calling a stored procedure, returning the iterator results as a list:
 
 .. code:: python
 
     >>> import pprint
     >>> import queries
     >>>
-    >>> for row in queries.callproc_results('now'):
-    ...     pprint.pprint(row)
-    ...
-    {'now': datetime.datetime(2014, 4, 25, 12, 52, 0, 133279,
-     tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-240, name=None))}
+    >>> pprint.pprint(list(queries.callproc('now')))
+    [{'now': datetime.datetime(2014, 4, 27, 15, 7, 18, 832480,
+                               tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-240, name=None))}
 
 Using the Session object as a context manager:
 
@@ -73,12 +71,38 @@ Using the Session object as a context manager:
     >>> import queries
     >>>
     >>> with queries.Session() as s:
-    ...     for row in s.query_results('SELECT * FROM names'):
+    ...     for row in s.query('SELECT * FROM names'):
     ...         pprint.pprint(row)
     ...
     {'id': 1, 'name': u'Jacob'}
     {'id': 2, 'name': u'Mason'}
     {'id': 3, 'name': u'Ethan'}
+
+Using in a Tornado RequestHandler:
+
+.. code:: python
+
+    from tornado import gen, ioloop, web
+    import queries
+
+    class MainHandler(web.RequestHandler):
+
+        def initialize(self):
+            self.session = queries.TornadoSession()
+
+        @gen.coroutine
+        def get(self):
+            data = yield self.session.query('SELECT * FROM names')
+            self.finish({'data': data})
+
+
+    application = web.Application([
+        (r"/", MainHandler),
+    ])
+
+    if __name__ == "__main__":
+        application.listen(8888)
+        ioloop.IOLoop.instance().start()
 
 Inspiration
 -----------

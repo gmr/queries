@@ -201,19 +201,6 @@ class Session(object):
     # Querying, executing, copying, etc
 
     def callproc(self, name, parameters=None):
-        """Call a stored procedure on the server returning all of the rows
-        returned by the server.
-
-        :rtype: list
-
-        """
-        self._cursor.callproc(name, parameters)
-        try:
-            return self._cursor.fetchall()
-        except psycopg2.ProgrammingError:
-            return
-
-    def callproc_results(self, name, parameters=None):
         """Call a stored procedure on the server and return an iterator of the
         result set for easy access to the data.
 
@@ -221,6 +208,13 @@ class Session(object):
 
             for row in session.callproc('now'):
                 print row
+
+        To return the full set of rows in a single call, wrap the method with
+        list:
+
+        .. code:: python
+
+            rows = list(session.callproc('now'))
 
         :param str name: The procedure name
         :param list parameters: The list of parameters to pass in
@@ -235,21 +229,6 @@ class Session(object):
             return
 
     def query(self, sql, parameters=None):
-        """Issue a query on the server mogrifying the parameters against the
-        sql statement and returning the entire result set as a list.
-
-        :param str sql: The SQL statement
-        :param dict parameters: A dictionary of query parameters
-        :rtype: list
-
-        """
-        self._cursor.execute(sql, parameters or {})
-        try:
-            return self._cursor.fetchall()
-        except psycopg2.ProgrammingError as error:
-            return
-
-    def query_results(self, sql, parameters=None):
         """A generator to issue a query on the server, mogrifying the
         parameters against the sql statement and returning the results as an
         iterator.
@@ -259,6 +238,13 @@ class Session(object):
             for row in session.query('SELECT * FROM foo WHERE bar=%(bar)s',
                                      {'bar': 'baz'}):
               print row
+
+        To return the full set of rows in a single call, wrap the method with
+        list:
+
+        .. code:: python
+
+            rows = list(session.query('SELECT * FROM foo'))
 
         :param str sql: The SQL statement
         :param dict parameters: A dictionary of query parameters

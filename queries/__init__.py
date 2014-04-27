@@ -50,9 +50,7 @@ except ImportError:
     TornadoSession = None
 
 from queries.simple import callproc
-from queries.simple import callproc_all
 from queries.simple import query
-from queries.simple import query_all
 from queries.simple import uri
 
 # For ease of access to different cursor types
