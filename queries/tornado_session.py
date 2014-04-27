@@ -13,6 +13,7 @@ from tornado import ioloop
 from tornado import stack_context
 import psycopg2
 
+from queries import pool
 from queries import session
 from queries import DEFAULT_URI
 
@@ -20,21 +21,31 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TornadoSession(session.Session):
+    """Session class for Tornado asynchronous applications. Using
+
+    Unlike `queries.Session.query` and `queries.Session.callproc`, the
+    `TornadoSession.query` and `TornadoSession.callproc` methods are not
+    iterators and return the full result set
+    using `psycopg2.cursor.fetchall()`.
+
+
+    """
 
     def __init__(self,
                  uri=DEFAULT_URI,
                  cursor_factory=extras.RealDictCursor,
-                 use_pool=True):
+                 use_pool=True,
+                 max_pool_size=pool.MAX_SIZE):
         """Connect to a PostgreSQL server using the module wide connection and
         set the isolation level.
 
         :param str uri: PostgreSQL connection URI
         :param psycopg2.cursor: The cursor type to use
         :param bool use_pool: Use the connection pool
+        :param int max_pool_size: Maximum number of connections for a single URI
 
         """
         self._callbacks = dict()
-        self._conn, self._cursor = None, None
         self._connections = dict()
         self._commands = dict()
         self._cursor_factory = cursor_factory
