@@ -40,7 +40,7 @@ class AddConnectionTests(unittest.TestCase):
 
     def test_max_connection_reached_raises_exception(self):
         """Ensure that a ValueError is raised with too many connections"""
-        for iteration in range(0, pool.MAX_CONNECTIONS):
+        for iteration in range(0, pool.MAX_SIZE):
             conn = 'conn%i' % iteration
             pool.add_connection(self.pid, self, conn)
         self.assertRaises(ValueError, pool.add_connection,
@@ -48,7 +48,7 @@ class AddConnectionTests(unittest.TestCase):
 
     def test_count_of_session_references(self):
         """Ensure a single session is only added once to the pool sessions"""
-        for iteration in range(0, pool.MAX_CONNECTIONS):
+        for iteration in range(0, pool.MAX_SIZE):
             conn = 'conn%i' % iteration
             pool.add_connection(self.pid, self, conn)
         self.assertEqual(len(pool.Pools[self.pid].sessions), 1)

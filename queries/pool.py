@@ -13,7 +13,7 @@ import weakref
 LOGGER = logging.getLogger(__name__)
 
 # Max connections per-pool
-MAX_CONNECTIONS = 10
+MAX_SIZE = 10
 
 # Time-to-live in the pool
 TTL = 60
@@ -37,7 +37,7 @@ def add_connection(pid, session, connection):
         Pools[pid] = Pool(set(), set(), 0)
 
     # Don't allow unbounded growth
-    if len(Pools[pid].connections) > MAX_CONNECTIONS:
+    if len(Pools[pid].connections) > MAX_SIZE:
         raise ValueError('No room in the pool')
 
     Pools[pid].connections.add(connection)
