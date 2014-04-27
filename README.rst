@@ -61,6 +61,15 @@ connecting to a database named for the current user. For example, if your
 username is ``fred`` and you omit the URI when issuing ``queries.query`` the URI
 that is constructed would be ``pgsql://fred@localhost:5432/fred``.
 
+If you'd rather use individual values for the connection, the queries.uri()
+method provides a quick and easy way to create a URI to pass into the various
+methods.
+
+.. code:: python
+
+    >>> queries.uri("server-name", 5432, "dbname", "user", "pass")
+    'pgsql://user:pass@server-name:5432/dbname'
+
 Here are a few examples of using the Queries simple API:
 
 1. Executing a query and fetching data using the default URI:
