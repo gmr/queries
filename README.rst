@@ -11,7 +11,7 @@ PostgreSQL. Key features include:
 - Internal connection pooling
 - Asynchronous support for Tornado_
 - Automatic registration of UUIDs, Unicode and Unicode Arrays
-- Ability to directly access psycopg2 `connection` and `cursor` objects
+- Ability to directly access psycopg2 ``connection`` and ``cursor`` objects
 - Connection information provided by URI
 - Query results delivered as a generator based iterators
 
@@ -32,10 +32,10 @@ queries is available via pypi and can be installed with easy_install or pip:
 Usage
 -----
 Queries provides both a session based API and a stripped-down simple API for
-interacting with PostgreSQL. If you're writing applications that may only have
+interacting with PostgreSQL. If you're writing applications that will only have
 one or two queries, the simple API may be useful. Instead of creating a session
-object when using the simple API methods (`queries.query()` and
-`queries.callproc()`), this is done for you. Simply pass in your query and
+object when using the simple API methods (``queries.query()`` and
+``queries.callproc()``), this is done for you. Simply pass in your query and
 the URIs_ of the PostgreSQL server to connect to:
 
 .. code:: python
@@ -51,8 +51,8 @@ When specifying a URI, if you omit the username and database name to connect
 with, Queries will use the current OS username for both. You can also omit the
 URI when connecting to connect to localhost on port 5432 as the current OS user,
 connecting to a database named for the current user. For example, if your
-username is "fred" and you omit the URI when issuing `queries.query` the URI
-that is constructed would be `pgsql://fred@localhost:5432/fred`.
+username is "fred" and you omit the URI when issuing ``queries.query`` the URI
+that is constructed would be ``pgsql://fred@localhost:5432/fred``.
 
 Here are a few examples of using the Queries simple API:
 
@@ -82,15 +82,15 @@ Here are a few examples of using the Queries simple API:
                                tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-240, name=None))}
 
 If your application is going to be performing multiple operations, you should use
-the `queries.Session` class. It can act as a context manager, meaning you can
-use it with the `with` keyword and it will take care of cleaning up after itself.
+the ``queries.Session`` class. It can act as a context manager, meaning you can
+use it with the ``with`` keyword and it will take care of cleaning up after itself.
 
-In addition to both the `Session.query()` and  `Session.callproc()` methods that
-are similar to the simple API methods, the `queries.Session` class provides
+In addition to both the ``Session.query()`` and  ``Session.callproc()`` methods that
+are similar to the simple API methods, the ``queries.Session`` class provides
 access to the psycopg2 connection and cursor objects. It also provides methods
 for managing transactions and to the LISTEN/NOTIFY functionality provided by
 PostgreSQL. For full documentation around the Session class, see the
-documentation_. The following example shows how a `queries.Session` object can
+documentation_. The following example shows how a ``queries.Session`` object can
 be used as a context manager.
 
 .. code:: python
@@ -108,8 +108,8 @@ be used as a context manager.
 
 In addition to providing a Pythonic, synchronous client API for PostgreSQL,
 Queries provides a very similar asynchronous API for use with Tornado_ [*]_.
-The only major difference API difference between `queries.TornadoSession` and
-`queries.Session` is the `TornadoSession.query` and `TornadoSession.callproc`
+The only major difference API difference between ``queries.TornadoSession`` and
+``queries.Session`` is the ``TornadoSession.query`` and ``TornadoSession.callproc``
 methods return the entire result set instead of acting as an iterator over
 the results. The following is an example of using Queries in a Tornado_ web
 application.
