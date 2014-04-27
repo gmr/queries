@@ -7,7 +7,7 @@ from queries.session import Session
 from queries import DEFAULT_URI
 
 
-def callproc(name, parameters=None, uri=DEFAULT_URI):
+def callproc(name, args=None, uri=DEFAULT_URI):
     """Call a stored procedure on the server and return an iterator of the
     result set for easy access to the data.
 
@@ -17,13 +17,13 @@ def callproc(name, parameters=None, uri=DEFAULT_URI):
             print row
 
     :param str name: The procedure name
-    :param list parameters: The list of parameters to pass in
+    :param list args: The list of arguments to pass in
     :param str uri: The PostgreSQL connection URI
     :return: iterator
 
     """
     with Session(uri) as session:
-        for row in session.callproc(name, parameters):
+        for row in session.callproc(name, args):
             yield row
 
 

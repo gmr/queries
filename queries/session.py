@@ -53,8 +53,6 @@ class Session(object):
     """
     _conn = None
     _cursor = None
-    _cursor_factory = None
-    _from_pool = False
     _tpc_id = None
     _uri = None
     _use_pool = True
@@ -90,29 +88,6 @@ class Session(object):
         self._cursor = self._get_cursor()
         self._autocommit()
 
-    def __del__(self):
-        """When deleting the context, ensure the instance is removed from
-        caches, etc.
-
-        """
-        self._cleanup()
-
-    def __enter__(self):
-        """For use as a context manager, return a handle to this object
-        instance.
-
-        :rtype: PgSQL
-
-        """
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """When leaving the context, ensure the instance is removed from
-        caches, etc.
-
-        """
-        self._cleanup()
-
     @property
     def backend_pid(self):
         """Return the backend process ID of the PostgreSQL server that this
@@ -122,6 +97,34 @@ class Session(object):
 
         """
         return self._conn.get_backend_pid()
+
+    def callproc(self, name, args=None):
+        """Call a stored procedure on the server and return an iterator of the
+        result set for easy access to the data.
+
+        .. code:: python
+
+            for row in session.callproc('now'):
+                print row
+
+        To return the full set of rows in a single call, wrap the method with
+        list:
+
+        .. code:: python
+
+            rows = list(session.callproc('now'))
+
+        :param str name: The procedure name
+        :param list args: The list of arguments to pass in
+        :return: iterator
+
+        """
+        self._cursor.callproc(name, args)
+        try:
+            for record in self._cursor:
+                yield record
+        except psycopg2.ProgrammingError:
+            return
 
     def close(self):
         """Explicitly close the connection and remove it from the connection
@@ -176,62 +179,16 @@ class Session(object):
         """
         return self._conn.notices
 
-    def set_encoding(self, value=DEFAULT_ENCODING):
-        """Set the client encoding for the session if the value specified
-        is different than the current client encoding.
 
-        :param str value: The encoding value to use
-
-        """
-        if self._conn.encoding != value:
-            self._conn.set_client_encoding(value)
 
     @property
-    def status(self):
-        """Return the current connection status as an integer value.
+    def pid(self):
+        """Return the pool ID used for connection pooling
 
-        The status should match one of the following constants:
-
-        - queries.Session.INTRANS: Connection established, in transaction
-        - queries.Session.PREPARED: Prepared for second phase of transaction
-        - queries.Session.READY: Connected, no active transaction
-
-        :rtype: int
+        :rtype: str
 
         """
-        if self._conn.status == psycopg2.extensions.STATUS_BEGIN:
-            return self.READY
-        return self._conn.status
-
-    # Querying, executing, copying, etc
-
-    def callproc(self, name, parameters=None):
-        """Call a stored procedure on the server and return an iterator of the
-        result set for easy access to the data.
-
-        .. code:: python
-
-            for row in session.callproc('now'):
-                print row
-
-        To return the full set of rows in a single call, wrap the method with
-        list:
-
-        .. code:: python
-
-            rows = list(session.callproc('now'))
-
-        :param str name: The procedure name
-        :param list parameters: The list of parameters to pass in
-        :return: iterator
-
-        """
-        self._cursor.callproc(name, parameters)
-        try:
-            for record in self._cursor:
-                yield record
-        except psycopg2.ProgrammingError:
-            return
+        return str(hashlib.md5(self._uri.encode('utf-8')).hexdigest())
 
     def query(self, sql, parameters=None):
         """A generator to issue a query on the server, mogrifying the
@@ -263,46 +220,55 @@ class Session(object):
         except psycopg2.ProgrammingError:
             return
 
-    # Listen Notify
+    def set_encoding(self, value=DEFAULT_ENCODING):
+        """Set the client encoding for the session if the value specified
+        is different than the current client encoding.
 
-    def listen(self, channel, callback=None):
-        pass
+        :param str value: The encoding value to use
 
-    def notifications(self):
-        pass
-
-    # TPC Transaction Functionality
-
-    def tx_begin(self):
-        """Begin a new transaction"""
-        # Ensure that auto-commit is off
-        if self._conn.autocommit:
-            self._conn.autocommit = False
-
-    def tx_commit(self):
-        self._conn.commit()
-
-    def tx_rollback(self):
-        self._conn.rollback()
+        """
+        if self._conn.encoding != value:
+            self._conn.set_client_encoding(value)
 
     @property
-    def tx_status(self):
-        """Return the transaction status for the current connection.
+    def status(self):
+        """Return the current connection status as an integer value.
 
-        Values should be one of:
+        The status should match one of the following constants:
 
-        - queries.Session.TX_IDLE: Idle without an active session
-        - queries.Session.TX_ACTIVE: A command is currently in progress
-        - queries.Session.TX_INTRANS: Idle in a valid transaction
-        - queries.Session.TX_INERROR: Idle in a failed transaction
-        - queries.Session.TX_UNKNOWN: Connection error
+        - queries.Session.INTRANS: Connection established, in transaction
+        - queries.Session.PREPARED: Prepared for second phase of transaction
+        - queries.Session.READY: Connected, no active transaction
 
         :rtype: int
 
         """
-        return self._conn.get_transaction_status()
+        if self._conn.status == psycopg2.extensions.STATUS_BEGIN:
+            return self.READY
+        return self._conn.status
 
-    # Internal methods
+    def __del__(self):
+        """When deleting the context, ensure the instance is removed from
+        caches, etc.
+
+        """
+        self._cleanup()
+
+    def __enter__(self):
+        """For use as a context manager, return a handle to this object
+        instance.
+
+        :rtype: PgSQL
+
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """When leaving the context, ensure the instance is removed from
+        caches, etc.
+
+        """
+        self._cleanup()
 
     def _autocommit(self):
         """Set the isolation level automatically to commit after every query"""
@@ -362,15 +328,6 @@ class Session(object):
 
         """
         return self._conn.cursor(cursor_factory=self._cursor_factory)
-
-    @property
-    def pid(self):
-        """Return a pool ID to be used with connection pooling
-
-        :rtype: str
-
-        """
-        return str(hashlib.md5(self._uri.encode('utf-8')).hexdigest())
 
     def _psycopg2_connect(self, kwargs):
         """Return a psycopg2 connection for the specified kwargs. Extend for
