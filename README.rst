@@ -2,17 +2,18 @@ Queries
 =======
 PostgreSQL database access simplified.
 
-Queries is an opinionated wrapper for interfacing with PostgreSQL that offers
-caching of connections and support for PyPy via psycopg2ct. Queries supports
-Python versions 2.6+ and 3.2+. Additionally, Queries provides an asynchronous
-interface to PostgreSQL for Tornado_.
+Queries is an opinionated wrapper of the psycopg2_ library for interfacing with
+PostgreSQL. Key features include:
 
-The core `queries.Queries` class will automatically register support for UUIDs,
-Unicode and Unicode arrays.
-
-Without requiring any additional code, queries offers connection pooling that
-allows for multiple modules in the same interpreter to use the same PostgreSQL
-connection.
+- Simplified API
+- Support of Python 2.6+ and 3.2+
+- PyPy support via psycopg2ct
+- Internal connection pooling
+- Asynchronous support for Tornado_
+- Automatic registration of UUIDs, Unicode and Unicode Arrays
+- Ability to directly access psycopg2 `connection` and `cursor` objects
+- Connection information provided by URI
+- Query results delivered as a generator based iterators
 
 |Version| |Downloads| |Status|
 
@@ -28,17 +29,34 @@ queries is available via pypi and can be installed with easy_install or pip:
 
     pip install queries
 
-Requirements
-------------
+Usage
+-----
+Queries provides both a session based API and a stripped-down simple API for
+interacting with PostgreSQL. If you're writing applications that may only have
+one or two queries, the simple API may be useful. Instead of creating a session
+object when using the simple API methods (`queries.query()` and
+`queries.callproc()`), this is done for you. Simply pass in your query and
+the URIs_ of the PostgreSQL server to connect to:
 
-- psycopg2 (for cpython support)
-- psycopg2ct (for PyPy support)
+.. code:: python
 
-Examples
---------
+    queries.query("SELECT now()", "pgsql://postgres@localhost:5432/postgres")
 
-Executing a query and fetching data, connecting by default to `localhost` as
-the current user with a database matching the username:
+Queries built-in connection pooling will re-use connections when possible,
+lowering the overhead of connecting and reconnecting. This is also true when
+you're using Queries sessions in different parts of your application in the same
+Python interpreter.
+
+When specifying a URI, if you omit the username and database name to connect
+with, Queries will use the current OS username for both. You can also omit the
+URI when connecting to connect to localhost on port 5432 as the current OS user,
+connecting to a database named for the current user. For example, if your
+username is "fred" and you omit the URI when issuing `queries.query` the URI
+that is constructed would be `pgsql://fred@localhost:5432/fred`.
+
+Here are a few examples of using the Queries simple API:
+
+1. Executing a query and fetching data using the default URI:
 
 .. code:: python
 
@@ -52,7 +70,7 @@ the current user with a database matching the username:
     {'id': 2, 'name': u'Mason'}
     {'id': 3, 'name': u'Ethan'}
 
-Calling a stored procedure, returning the iterator results as a list:
+2. Calling a stored procedure, returning the iterator results as a list:
 
 .. code:: python
 
@@ -63,7 +81,17 @@ Calling a stored procedure, returning the iterator results as a list:
     [{'now': datetime.datetime(2014, 4, 27, 15, 7, 18, 832480,
                                tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-240, name=None))}
 
-Using the Session object as a context manager:
+If your application is going to be performing multiple operations, you should use
+the `queries.Session` class. It can act as a context manager, meaning you can
+use it with the `with` keyword and it will take care of cleaning up after itself.
+
+In addition to both the `Session.query()` and  `Session.callproc()` methods that
+are similar to the simple API methods, the `queries.Session` class provides
+access to the psycopg2 connection and cursor objects. It also provides methods
+for managing transactions and to the LISTEN/NOTIFY functionality provided by
+PostgreSQL. For full documentation around the Session class, see the
+documentation_. The following example shows how a `queries.Session` object can
+be used as a context manager.
 
 .. code:: python
 
@@ -78,7 +106,13 @@ Using the Session object as a context manager:
     {'id': 2, 'name': u'Mason'}
     {'id': 3, 'name': u'Ethan'}
 
-Using in a Tornado RequestHandler:
+In addition to providing a Pythonic, synchronous client API for PostgreSQL,
+Queries provides a very similar asynchronous API for use with Tornado_ [*]_.
+The only major difference API difference between `queries.TornadoSession` and
+`queries.Session` is the `TornadoSession.query` and `TornadoSession.callproc`
+methods return the entire result set instead of acting as an iterator over
+the results. The following is an example of using Queries in a Tornado_ web
+application.
 
 .. code:: python
 
@@ -104,6 +138,9 @@ Using in a Tornado RequestHandler:
         application.listen(8888)
         ioloop.IOLoop.instance().start()
 
+.. [*] The Queries simple API methods are synchronous only and should not be used
+in an asynchronous Tornado application.
+
 Inspiration
 -----------
 Queries is inspired by `Kenneth Reitz's <https://github.com/kennethreitz/>`_ awesome
@@ -114,9 +151,11 @@ History
 Queries is a fork and enhancement of pgsql_wrapper_, which can be found in the
 main GitHub repository of Queries as tags prior to version 1.2.0.
 
+.. _psycopg2: https://pypi.python.org/pypi/psycopg2
+.. _documentation: https://queries.readthedocs.org
+.. _URIs: http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING
 .. _pgsql_wrapper: https://pypi.python.org/pypi/pgsql_wrapper
-
-.. _tornado: http://tornadoweb.org
+.. _Tornado: http://tornadoweb.org
 
 .. |Version| image:: https://badge.fury.io/py/queries.svg?
    :target: http://badge.fury.io/py/queries
