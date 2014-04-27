@@ -21,16 +21,36 @@ LOGGER = logging.getLogger(__name__)
 
 
 class TornadoSession(session.Session):
-    """Session class for Tornado asynchronous applications. Using
+    """Session class for Tornado asynchronous applications. Uses
+    ``tornado.gen.coroutine`` to wrap API methods for use in Tornado.
 
-    Unlike `queries.Session.query` and `queries.Session.callproc`, the
-    `TornadoSession.query` and `TornadoSession.callproc` methods are not
+    Utilizes connection pooling to ensure that multiple concurrent asynchronous
+    queries do not block each other. Heavily trafficked services will require
+    a higher max_pool_size to allow for greater connection concurrency.
+
+    .. code:: python
+
+        class ExampleHandler(web.RequestHandler):
+
+            def initialize(self):
+                self.session = queries.TornadoSession()
+
+            @gen.coroutine
+            def get(self):
+                data = yield self.session.query('SELECT * FROM names')
+                self.finish({'data': data})
+
+    .. Note:: Unlike `queries.Session.query` and `queries.Session.callproc`,
+    the `TornadoSession.query` and `TornadoSession.callproc` methods are not
     iterators and return the full result set
     using `psycopg2.cursor.fetchall()`.
 
+    :param str uri: PostgreSQL connection URI
+    :param psycopg2.cursor: The cursor type to use
+    :param bool use_pool: Use the connection pool
+    :param int max_pool_size: Maximum number of connections for a single URI
 
     """
-
     def __init__(self,
                  uri=DEFAULT_URI,
                  cursor_factory=extras.RealDictCursor,
@@ -42,10 +62,11 @@ class TornadoSession(session.Session):
         :param str uri: PostgreSQL connection URI
         :param psycopg2.cursor: The cursor type to use
         :param bool use_pool: Use the connection pool
-        :param int max_pool_size: Maximum number of connections for a single URI
+        :param int max_pool_size: Max number of connections for a single URI
 
         """
         self._callbacks = dict()
+        self._listeners = dict()
         self._connections = dict()
         self._commands = dict()
         self._cursor_factory = cursor_factory
@@ -55,8 +76,21 @@ class TornadoSession(session.Session):
         self._use_pool = use_pool
 
     @gen.coroutine
-    def callproc(self, name, parameters=None):
+    def callproc(self, name, args=None):
+        """Call a stored procedure asynchronously on the server, passing in the
+        arguments to be passed to the stored procedure, returning the results
+        as a list. If no results are returned, the method will return None
+        instead.
 
+        .. code:: python
+
+            data = yield session.callproc('char', [65])
+
+        :param str name: The stored procedure name
+        :param list args: An optional list of procedure arguments
+        :rtype: list | None
+
+        """
         # Grab a connection, either new or out of the pool
         connection, fd, status = self._connect()
 
@@ -75,7 +109,7 @@ class TornadoSession(session.Session):
 
         # Get the cursor, execute the query and wait for the result
         cursor = self._get_cursor(connection)
-        cursor.callproc(name, parameters)
+        cursor.callproc(name, args)
         yield gen.Wait((self, fd))
 
         # If there was an exception, cleanup, then raise it
@@ -97,8 +131,95 @@ class TornadoSession(session.Session):
         raise gen.Return(result)
 
     @gen.coroutine
-    def query(self, sql, parameters=None):
+    def listen(self, channel, callback):
+        """Listen for notifications from PostgreSQL on the specified channel,
+        passing in a callback to receive the notifications.
 
+        ..code:: python
+
+        class ListenHandler(web.RequestHandler):
+
+            def initialize(self):
+                self.channel = 'example'
+                self.session = queries.TornadoSession()
+
+            @gen.coroutine
+            def get(self, *args, **kwargs):
+                yield self.session.listen(self.channel, self.on_notification)
+                self.finish()
+
+            def on_connection_close(self):
+                if self.channel:
+                    self.session.unlisten(self.channel)
+                    self.channel = None
+
+            @gen.coroutine
+            def on_notification(self, channel, pid, payload):
+                self.write('Payload: %s\n' % payload)
+                yield gen.Task(self.flush)
+
+        See the documentation at https://queries.readthedocs.org for a more
+        complete example.
+
+        :param str channel: The channel to stop listening on
+        :param method callback: The method to call on each notification
+
+        """
+        # Grab a connection, either new or out of the pool
+        connection, fd, status = self._connect()
+
+        # Add a callback for either connecting or waiting for the query
+        self._callbacks[fd] = yield gen.Callback((self, fd))
+
+        # Add the connection to the IOLoop
+        self._ioloop.add_handler(connection.fileno(), self._on_io_events,
+                                 ioloop.IOLoop.WRITE)
+
+        # Maybe wait for the connection
+        if status == self.SETUP and connection.poll() != extensions.POLL_OK:
+            yield gen.Wait((self, fd))
+            # Setup the callback for the actual query
+            self._callbacks[fd] = yield gen.Callback((self, fd))
+
+        # Get the cursor
+        cursor = self._get_cursor(connection)
+
+        # Add the channel and callback to the class level listeners
+        self._listeners[channel] = (fd, cursor)
+
+        # Send the LISTEN to PostgreSQL
+        cursor.execute("LISTEN %s" % channel)
+
+        # Loop while we have listeners and a channel
+        while channel in self._listeners and self._listeners[channel]:
+
+            # Wait for an event on that FD
+            yield gen.Wait((self, fd))
+
+            # Iterate through all of the notifications
+            while connection.notifies:
+                notify = connection.notifies.pop()
+                callback(channel, notify.pid, notify.payload)
+
+            # Set a new callback for the fd if we're not exiting
+            if channel in self._listeners:
+                self._callbacks[fd] = yield gen.Callback((self, fd))
+
+    @gen.coroutine
+    def query(self, sql, parameters=None):
+        """Issue a query asynchronously on the server, mogrifying the
+        parameters against the sql statement and yielding the results as list.
+
+        .. code:: python
+
+            data = yield session.query('SELECT * FROM foo WHERE bar=%(bar)s',
+                                       {'bar': 'baz'}):
+
+        :param str sql: The SQL statement
+        :param dict parameters: A dictionary of query parameters
+        :rtype: list
+
+        """
         # Grab a connection, either new or out of the pool
         connection, fd, status = self._connect()
 
@@ -138,7 +259,42 @@ class TornadoSession(session.Session):
         # Return the result if there are any
         raise gen.Return(result)
 
+    @gen.coroutine
+    def unlisten(self, channel):
+        """Cancel a listening on a channel.
+
+        ..code:: python
+
+            yield self.session.unlisten('channel-name')
+
+        :param str channel: The channel to stop listening on
+
+        """
+        if channel not in self._listeners:
+            raise ValueError("No listeners for specified channel")
+
+        # Get the fd and cursor, then remove the listener
+        fd, cursor = self._listeners[channel]
+        del self._listeners[channel]
+
+        # Call the callback waiting in the LISTEN loop
+        self._callbacks[fd]((self, fd))
+
+        # Create a callback, unlisten and wait for the result
+        self._callbacks[fd] = yield gen.Callback((self, fd))
+        cursor.execute("UNLISTEN %s;" % channel)
+        yield gen.Wait((self, fd))
+
+        # Close the cursor and cleanup the references for this request
+        self._exec_cleanup(cursor, fd)
+
     def _connect(self):
+        """Connect to PostgreSQL and setup a few variables and data structures
+        to reduce code in the coroutine methods.
+
+        :rtype: tuple(psycopg2._psycopg.connection, int, int)
+
+        """
         connection = super(TornadoSession, self)._connect()
         fd, status = connection.fileno(), connection.status
 
