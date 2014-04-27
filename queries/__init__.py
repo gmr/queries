@@ -43,6 +43,12 @@ DEFAULT_URI = 'pgsql://localhost:5432'
 
 # Mappings to queries classes and methods
 from queries.session import Session
+
+try:
+    from queries.tornado_session import TornadoSession
+except ImportError:
+    TornadoSession = None
+
 from queries.simple import callproc
 from queries.simple import callproc_all
 from queries.simple import query

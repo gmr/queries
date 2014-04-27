@@ -4,7 +4,8 @@ PostgreSQL database access simplified.
 
 Queries is an opinionated wrapper for interfacing with PostgreSQL that offers
 caching of connections and support for PyPy via psycopg2ct. Queries supports
-Python versions 2.6+ and 3.2+.
+Python versions 2.6+ and 3.2+. Additionally, Queries provides an asynchronous
+interface to PostgreSQL for Tornado_.
 
 The core `queries.Queries` class will automatically register support for UUIDs,
 Unicode and Unicode arrays.
@@ -58,7 +59,7 @@ Iterate over the results from calling a stored procedure:
     >>> import pprint
     >>> import queries
     >>>
-    >>> for row in queries.callproc('now'):
+    >>> for row in queries.callproc_results('now'):
     ...     pprint.pprint(row)
     ...
     {'now': datetime.datetime(2014, 4, 25, 12, 52, 0, 133279,
@@ -72,7 +73,7 @@ Using the Session object as a context manager:
     >>> import queries
     >>>
     >>> with queries.Session() as s:
-    ...     for row in s.query('SELECT * FROM names'):
+    ...     for row in s.query_results('SELECT * FROM names'):
     ...         pprint.pprint(row)
     ...
     {'id': 1, 'name': u'Jacob'}
@@ -90,6 +91,8 @@ Queries is a fork and enhancement of pgsql_wrapper_, which can be found in the
 main GitHub repository of Queries as tags prior to version 1.2.0.
 
 .. _pgsql_wrapper: https://pypi.python.org/pypi/pgsql_wrapper
+
+.. _tornado: http://tornadoweb.org
 
 .. |Version| image:: https://badge.fury.io/py/queries.svg?
    :target: http://badge.fury.io/py/queries

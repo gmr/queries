@@ -36,7 +36,7 @@ def add_connection(pid, session, connection):
     if pid not in Pools:
         Pools[pid] = Pool(set(), set(), 0)
 
-    # Dont allow unbounded growth
+    # Don't allow unbounded growth
     if len(Pools[pid].connections) > MAX_CONNECTIONS:
         raise ValueError('No room in the pool')
 

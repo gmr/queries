@@ -58,6 +58,7 @@ class Session(object):
     INTRANS = extensions.STATUS_IN_TRANSACTION
     PREPARED = extensions.STATUS_PREPARED
     READY = extensions.STATUS_READY
+    SETUP = extensions.STATUS_SETUP
 
     # Transaction status constants
     TX_ACTIVE = extensions.TRANSACTION_STATUS_ACTIVE
@@ -80,7 +81,8 @@ class Session(object):
         self._uri = uri
         self._use_pool = use_pool
         self._conn = self._connect()
-        self._cursor = self._get_cursor(cursor_factory)
+        self._cursor_factory = cursor_factory
+        self._cursor = self._get_cursor()
         self._autocommit()
 
     def __del__(self):
@@ -199,6 +201,19 @@ class Session(object):
     # Querying, executing, copying, etc
 
     def callproc(self, name, parameters=None):
+        """Call a stored procedure on the server returning all of the rows
+        returned by the server.
+
+        :rtype: list
+
+        """
+        self._cursor.callproc(name, parameters)
+        try:
+            return self._cursor.fetchall()
+        except psycopg2.ProgrammingError:
+            return
+
+    def callproc_results(self, name, parameters=None):
         """Call a stored procedure on the server and return an iterator of the
         result set for easy access to the data.
 
@@ -213,20 +228,28 @@ class Session(object):
 
         """
         self._cursor.callproc(name, parameters)
-        for record in self._cursor:
-            yield record
+        try:
+            for record in self._cursor:
+                yield record
+        except psycopg2.ProgrammingError:
+            return
 
-    def callproc_all(self, name, parameters=None):
-        """Call a stored procedure on the server returning all of the rows
-        returned by the server.
+    def query(self, sql, parameters=None):
+        """Issue a query on the server mogrifying the parameters against the
+        sql statement and returning the entire result set as a list.
 
+        :param str sql: The SQL statement
+        :param dict parameters: A dictionary of query parameters
         :rtype: list
 
         """
-        self._cursor.callproc(name, parameters)
-        return self._cursor.fetchall()
+        self._cursor.execute(sql, parameters or {})
+        try:
+            return self._cursor.fetchall()
+        except psycopg2.ProgrammingError as error:
+            return
 
-    def query(self, sql, parameters=None):
+    def query_results(self, sql, parameters=None):
         """A generator to issue a query on the server, mogrifying the
         parameters against the sql statement and returning the results as an
         iterator.
@@ -243,20 +266,11 @@ class Session(object):
 
         """
         self._cursor.execute(sql, parameters)
-        for record in self._cursor:
-            yield record
-
-    def query_all(self, sql, parameters=None):
-        """Issue a query on the server mogrifying the parameters against the
-        sql statement and returning the entire result set as a list.
-
-        :param str sql: The SQL statement
-        :param dict parameters: A dictionary of query parameters
-        :rtype: list
-
-        """
-        self._cursor.execute(sql, parameters or {})
-        return self._cursor.fetchall()
+        try:
+            for record in self._cursor:
+                yield record
+        except psycopg2.ProgrammingError:
+            return
 
     # Listen Notify
 
@@ -350,14 +364,13 @@ class Session(object):
 
         return connection
 
-    def _get_cursor(self, cursor_factory):
+    def _get_cursor(self):
         """Return a cursor for the given cursor_factory.
 
-        :param psycopg2.cursor: The cursor type to use
         :rtype: psycopg2.extensions.cursor
 
         """
-        return self._conn.cursor(cursor_factory=cursor_factory)
+        return self._conn.cursor(cursor_factory=self._cursor_factory)
 
     @property
     def pid(self):
