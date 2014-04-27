@@ -51,8 +51,13 @@ class Session(object):
     :param bool use_pool: Use the connection pool
 
     """
+    _conn = None
+    _cursor = None
+    _cursor_factory = None
     _from_pool = False
     _tpc_id = None
+    _uri = None
+    _use_pool = True
 
     # Connection status constants
     INTRANS = extensions.STATUS_IN_TRANSACTION
@@ -365,7 +370,7 @@ class Session(object):
         :rtype: str
 
         """
-        return hashlib.md5(self._uri.encode('utf-8')).digest()
+        return str(hashlib.md5(self._uri.encode('utf-8')).digest())
 
     def _psycopg2_connect(self, kwargs):
         """Return a psycopg2 connection for the specified kwargs. Extend for
