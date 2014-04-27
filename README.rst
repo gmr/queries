@@ -118,8 +118,8 @@ Queries provides a very similar asynchronous API for use with Tornado_ [*]_.
 The only major difference API difference between ``queries.TornadoSession`` and
 ``queries.Session`` is the ``TornadoSession.query`` and ``TornadoSession.callproc``
 methods return the entire result set instead of acting as an iterator over
-the results. The following is an example of using Queries in a Tornado_ web
-application.
+the results. The following example uses ``TornadoSession.query`` in an asynchronous
+Tornado_ web application to send a JSON payload with the query result set.
 
 .. code:: python
 
@@ -145,8 +145,7 @@ application.
         application.listen(8888)
         ioloop.IOLoop.instance().start()
 
-.. [*] The Queries simple API methods are synchronous only and should not be used
-in an asynchronous Tornado application.
+.. [*] Simple API methods are not asynchronous and should not be used in an asynchronous Tornado application.
 
 Inspiration
 -----------
