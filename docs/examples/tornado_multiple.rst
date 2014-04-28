@@ -18,12 +18,14 @@ request and will wait until all queries are complete before progressing:
         def get(self, *args, **kwargs):
 
             # Issue the three queries and wait for them to finish before progressing
-            q1result, q2result = yield [self.session.query('SELECT * FROM foo'),
-                                        self.session.query('SELECT * FROM bar'),
-                                        self.session.query('INSERT INTO requests VALUES (%s, %s, %s)',
-                                                           [self.remote_ip,
-                                                            self.request_uri,
-                                                            self.headers.get('User-Agent', '')])]
+            ((q1rows, q1result),
+              q2rows, q2result),
+              q3rows, q3result)) = yield [self.session.query('SELECT * FROM foo'),
+                                          self.session.query('SELECT * FROM bar'),
+                                          self.session.query('INSERT INTO requests VALUES (%s, %s, %s)',
+                                                             [self.remote_ip,
+                                                              self.request_uri,
+                                                              self.headers.get('User-Agent', '')])]
             # Close the connection
             self.finish({'q1result': q1result, 'q2result': q2result})
 
