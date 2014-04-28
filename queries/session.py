@@ -106,7 +106,7 @@ class Session(object):
 
         .. code:: python
 
-            rows = list(session.callproc('now'))
+            rows = list(session.callproc('chr', [65]))
 
         :param str name: The procedure name
         :param list args: The list of arguments to pass in
@@ -192,7 +192,7 @@ class Session(object):
 
         .. code:: python
 
-            rows = list(session.query('SELECT * FROM foo'))
+            rows = list(session.query('SELECT * FROM foo WHERE id=%s', [1]))
 
         :param str sql: The SQL statement
         :param dict parameters: A dictionary of query parameters
