@@ -216,23 +216,6 @@ class Session(object):
         if self._conn.encoding != value:
             self._conn.set_client_encoding(value)
 
-    @property
-    def status(self):
-        """Return the current connection status as an integer value.
-
-        The status should match one of the following constants:
-
-        - queries.Session.INTRANS: Connection established, in transaction
-        - queries.Session.PREPARED: Prepared for second phase of transaction
-        - queries.Session.READY: Connected, no active transaction
-
-        :rtype: int
-
-        """
-        if self._conn.status == psycopg2.extensions.STATUS_BEGIN:
-            return self.READY
-        return self._conn.status
-
     def __del__(self):
         """When deleting the context, ensure the instance is removed from
         caches, etc.
@@ -347,3 +330,20 @@ class Session(object):
 
         """
         psycopg2.extras.register_uuid(conn_or_curs=connection)
+
+    @property
+    def _status(self):
+        """Return the current connection status as an integer value.
+
+        The status should match one of the following constants:
+
+        - queries.Session.INTRANS: Connection established, in transaction
+        - queries.Session.PREPARED: Prepared for second phase of transaction
+        - queries.Session.READY: Connected, no active transaction
+
+        :rtype: int
+
+        """
+        if self._conn.status == psycopg2.extensions.STATUS_BEGIN:
+            return self.READY
+        return self._conn.status
