@@ -4,7 +4,6 @@ Tests for the session.Session class
 """
 import hashlib
 import mock
-import uuid
 try:
     import unittest2 as unittest
 except ImportError:
@@ -154,4 +153,4 @@ class SessionTests(unittest.TestCase):
         """Ensure Session._cursor is None after close"""
         sess = session.Session('pgsql://foo@bar:9999/baz')
         sess.close()
-        self.assertRaises(AssertionError, sess.close)
+        self.assertRaises(psycopg2.InterfaceError, sess.close)
