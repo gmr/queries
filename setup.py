@@ -8,6 +8,9 @@ if target == 'PyPy':
 else:
     install_requires = ['psycopg2']
 
+# Install tornado if generating docs on readthedocs
+if os.environ.get('READTHEDOCS', None) == 'True':
+    install_requires.append('tornado')
 
 setup(name='queries',
       version='1.2.0',
