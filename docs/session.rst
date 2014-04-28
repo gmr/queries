@@ -13,7 +13,7 @@ in how you use the :py:class:`queries.Session` object, there are convenience
 methods designed to simplify the interaction with PostgreSQL.
 
 For psycopg2_ functionality outside of what is exposed in Session, simply
-use the :py:meth:`queries.Session.connection` or :py:meth:`queries.Session.cursor`
+use the :py:attr:`queries.Session.connection` or :py:attr:`queries.Session.cursor`
 properties to gain access to either object just as you would in a program using
 psycopg2_ directly.
 
