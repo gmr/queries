@@ -4,3 +4,4 @@ build
 dist
 *.egg-info
 atlassian-ide-plugin.xml
+docs/_build
