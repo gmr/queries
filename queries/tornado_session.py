@@ -87,7 +87,15 @@ class TornadoSession(session.Session):
 
         :param str name: The stored procedure name
         :param list args: An optional list of procedure arguments
-        :rtype: list
+        :return tuple: int, list
+        :raises: queries.DataError
+        :raises: queries.DatabaseError
+        :raises: queries.IntegrityError
+        :raises: queries.InternalError
+        :raises: queries.InterfaceError
+        :raises: queries.NotSupportedError
+        :raises: queries.OperationalError
+        :raises: queries.ProgrammingError
 
         """
         # Grab a connection, either new or out of the pool
@@ -186,7 +194,15 @@ class TornadoSession(session.Session):
 
         :param str sql: The SQL statement
         :param dict parameters: A dictionary of query parameters
-        :return tuple: (row_count, rows)
+        :return tuple: int, list
+        :raises: queries.DataError
+        :raises: queries.DatabaseError
+        :raises: queries.IntegrityError
+        :raises: queries.InternalError
+        :raises: queries.InterfaceError
+        :raises: queries.NotSupportedError
+        :raises: queries.OperationalError
+        :raises: queries.ProgrammingError
 
         """
         # Grab a connection, either new or out of the pool

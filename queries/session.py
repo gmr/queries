@@ -111,7 +111,15 @@ class Session(object):
         :param str name: The procedure name
         :param list args: The list of arguments to pass in
         :rtype: iterator
-
+        :raises: queries.DataError
+        :raises: queries.DatabaseError
+        :raises: queries.IntegrityError
+        :raises: queries.InternalError
+        :raises: queries.InterfaceError
+        :raises: queries.NotSupportedError
+        :raises: queries.OperationalError
+        :raises: queries.ProgrammingError
+        
         """
         self._cursor.callproc(name, args)
         try:
@@ -197,6 +205,14 @@ class Session(object):
         :param str sql: The SQL statement
         :param dict parameters: A dictionary of query parameters
         :rtype: iterator
+        :raises: queries.DataError
+        :raises: queries.DatabaseError
+        :raises: queries.IntegrityError
+        :raises: queries.InternalError
+        :raises: queries.InterfaceError
+        :raises: queries.NotSupportedError
+        :raises: queries.OperationalError
+        :raises: queries.ProgrammingError
 
         """
         self._cursor.execute(sql, parameters)

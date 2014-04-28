@@ -4,7 +4,8 @@ Use a Queries Session asynchronously within the `Tornado <http://www.tornadoweb.
 
 .. note:: Currently, due to the nature of how the connection pool is managed, transactions
     are not supported. Transaction support is expected to be added in a subsequent
-    release.
+    release. Queries executed are still atomic and will raise an exception if there are
+    any errors.
 
 Example Use
 -----------
@@ -23,7 +24,7 @@ JSON document containing the query results.
 
         @gen.coroutine
         def get(self):
-            data = yield self.session.query('SELECT * FROM names')
+            rows, data = yield self.session.query('SELECT * FROM names')
             self.finish({'data': data})
 
 See the :doc:`examples/index` for more :py:meth:`~queries.TornadoSession` examples.
