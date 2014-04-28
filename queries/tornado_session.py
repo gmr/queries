@@ -3,6 +3,20 @@ Tornado Session Adapter
 
 Use Queries asynchronously within the Tornado framework.
 
+Example Use:
+
+.. code:: python
+
+    class ExampleHandler(web.RequestHandler):
+
+        def initialize(self):
+            self.session = queries.TornadoSession()
+
+        @gen.coroutine
+        def get(self):
+            data = yield self.session.query('SELECT * FROM names')
+            self.finish({'data': data})
+
 """
 import logging
 
@@ -22,28 +36,18 @@ LOGGER = logging.getLogger(__name__)
 
 class TornadoSession(session.Session):
     """Session class for Tornado asynchronous applications. Uses
-    ``tornado.gen.coroutine`` to wrap API methods for use in Tornado.
+    :py:func:`tornado.gen.coroutine` to wrap API methods for use in Tornado.
 
     Utilizes connection pooling to ensure that multiple concurrent asynchronous
     queries do not block each other. Heavily trafficked services will require
-    a higher max_pool_size to allow for greater connection concurrency.
+    a higher ``max_pool_size`` to allow for greater connection concurrency.
 
-    .. code:: python
-
-        class ExampleHandler(web.RequestHandler):
-
-            def initialize(self):
-                self.session = queries.TornadoSession()
-
-            @gen.coroutine
-            def get(self):
-                data = yield self.session.query('SELECT * FROM names')
-                self.finish({'data': data})
-
-    .. Note:: Unlike `queries.Session.query` and `queries.Session.callproc`,
-    the `TornadoSession.query` and `TornadoSession.callproc` methods are not
-    iterators and return the full result set
-    using `psycopg2.cursor.fetchall()`.
+    .. Note:: Unlike :py:meth:`Session.query <queries.Session.query>` and
+        :py:meth:`Session.callproc <queries.Session.callproc>`, the
+        :py:meth:`TornadoSession.query <queries.TornadoSession.query>` and
+        :py:meth:`TornadoSession.callproc <queries.TornadoSession.callproc>`
+        methods are not iterators and will return the full result set using
+        :py:meth:`cursor.fetchall`.
 
     :param str uri: PostgreSQL connection URI
     :param psycopg2.cursor: The cursor type to use
@@ -60,7 +64,7 @@ class TornadoSession(session.Session):
         set the isolation level.
 
         :param str uri: PostgreSQL connection URI
-        :param psycopg2.cursor: The cursor type to use
+        :param psycopg2.extensions.cursor: The cursor type to use
         :param bool use_pool: Use the connection pool
         :param int max_pool_size: Max number of connections for a single URI
 
@@ -81,6 +85,8 @@ class TornadoSession(session.Session):
         arguments to be passed to the stored procedure, returning the results
         as a list. If no results are returned, the method will return None
         instead.
+
+        Example:
 
         .. code:: python
 
@@ -135,31 +141,31 @@ class TornadoSession(session.Session):
         """Listen for notifications from PostgreSQL on the specified channel,
         passing in a callback to receive the notifications.
 
-        ..code:: python
+        Example:
 
-        class ListenHandler(web.RequestHandler):
+        .. code:: python
 
-            def initialize(self):
-                self.channel = 'example'
-                self.session = queries.TornadoSession()
+            class ListenHandler(web.RequestHandler):
 
-            @gen.coroutine
-            def get(self, *args, **kwargs):
-                yield self.session.listen(self.channel, self.on_notification)
-                self.finish()
+                def initialize(self):
+                    self.channel = 'example'
+                    self.session = queries.TornadoSession()
 
-            def on_connection_close(self):
-                if self.channel:
-                    self.session.unlisten(self.channel)
-                    self.channel = None
+                @gen.coroutine
+                def get(self, *args, **kwargs):
+                    yield self.session.listen(self.channel,
+                                              self.on_notification)
+                    self.finish()
 
-            @gen.coroutine
-            def on_notification(self, channel, pid, payload):
-                self.write('Payload: %s\n' % payload)
-                yield gen.Task(self.flush)
+                def on_connection_close(self):
+                    if self.channel:
+                        self.session.unlisten(self.channel)
+                        self.channel = None
 
-        See the documentation at https://queries.readthedocs.org for a more
-        complete example.
+                @gen.coroutine
+                def on_notification(self, channel, pid, payload):
+                    self.write('Payload: %s\\n' % payload)
+                    yield gen.Task(self.flush)
 
         :param str channel: The channel to stop listening on
         :param method callback: The method to call on each notification
@@ -209,6 +215,8 @@ class TornadoSession(session.Session):
     def query(self, sql, parameters=None):
         """Issue a query asynchronously on the server, mogrifying the
         parameters against the sql statement and yielding the results as list.
+
+        Example:
 
         .. code:: python
 
@@ -263,7 +271,9 @@ class TornadoSession(session.Session):
     def unlisten(self, channel):
         """Cancel a listening on a channel.
 
-        ..code:: python
+        Example:
+
+        .. code:: python
 
             yield self.session.unlisten('channel-name')
 
@@ -292,7 +302,7 @@ class TornadoSession(session.Session):
         """Connect to PostgreSQL and setup a few variables and data structures
         to reduce code in the coroutine methods.
 
-        :rtype: tuple(psycopg2._psycopg.connection, int, int)
+        :return tuple: psycopg2.extensions.connection, int, int
 
         """
         connection = super(TornadoSession, self)._connect()
@@ -307,7 +317,7 @@ class TornadoSession(session.Session):
         """Close the cursor, remove any references to the fd in internal state
         and remove the fd from the ioloop.
 
-        :param psycopg2.cursor cursor: The cursor to close
+        :param psycopg2.extensions.cursor cursor: The cursor to close
         :param int fd: The connection file descriptor
 
         """
@@ -323,7 +333,7 @@ class TornadoSession(session.Session):
     def _get_cursor(self, connection):
         """Return a cursor for the given connection.
 
-        :param psycopg2._psycopg.connection connection: The connection to use
+        :param psycopg2.extensions.connection connection: The connection to use
         :rtype: psycopg2.extensions.cursor
 
         """
@@ -370,7 +380,7 @@ class TornadoSession(session.Session):
         use in async session adapters.
 
         :param dict kwargs: Keyword connection args
-        :rtype: psycopg2.connection
+        :rtype: psycopg2.extensions.connection
 
         """
         kwargs['async'] = True

@@ -12,6 +12,15 @@ For `psycopg2` functionality outside of what is exposed in Session, simply
 use the Session.connection or Session.cursor properties to gain access to
 either object just as you would in a program using psycopg2 directly.
 
+Example usage:
+
+.. code:: python
+
+    import queries
+
+    with queries.Session('pgsql://postgres@localhost/postgres') as session:
+        for row in session.Query('SELECT * FROM table'):
+            print row
 
 """
 import hashlib
@@ -36,18 +45,10 @@ class Session(object):
     """The Session class allows for a unified (and simplified) view of
     interfacing with a PostgreSQL database server. The Session object can
     act as a context manager, providing automated cleanup and simple, pythoic
-    way of interacting with the object:
-
-    .. code:: python
-
-        import queries
-
-        with queries.Session('pgsql://postgres@localhost/postgres') as session:
-            for row in session.Query('SELECT * FROM table'):
-                print row
+    way of interacting with the object.
 
     :param str uri: PostgreSQL connection URI
-    :param psycopg2.cursor: The cursor type to use
+    :param psycopg2.extensions.cursor: The cursor type to use
     :param bool use_pool: Use the connection pool
 
     """
@@ -77,7 +78,7 @@ class Session(object):
         set the isolation level.
 
         :param str uri: PostgreSQL connection URI
-        :param psycopg2.cursor: The cursor type to use
+        :param psycopg2.extensions.cursor: The cursor type to use
         :param bool use_pool: Use the connection pool
 
         """
@@ -100,15 +101,8 @@ class Session(object):
 
     def callproc(self, name, args=None):
         """Call a stored procedure on the server and return an iterator of the
-        result set for easy access to the data.
-
-        .. code:: python
-
-            for row in session.callproc('now'):
-                print row
-
-        To return the full set of rows in a single call, wrap the method with
-        list:
+        result set for easy access to the data. To return the full set of rows
+        in a single call, wrap the method with list:
 
         .. code:: python
 
@@ -116,7 +110,7 @@ class Session(object):
 
         :param str name: The procedure name
         :param list args: The list of arguments to pass in
-        :return: iterator
+        :rtype: iterator
 
         """
         self._cursor.callproc(name, args)
@@ -128,13 +122,13 @@ class Session(object):
 
     def close(self):
         """Explicitly close the connection and remove it from the connection
-        pool if pooling is enabled.
+        pool if pooling is enabled. If the connection is already closed
 
-        :raises: AssertionError
+        :raises: psycopg2.InterfaceError
 
         """
         if not self._conn:
-            raise AssertionError('Connection not open')
+            raise psycopg2.InterfaceError('Connection not open')
 
         if self._use_pool:
             pool.remove_connection(self.pid, self._conn)
@@ -147,7 +141,7 @@ class Session(object):
     def connection(self):
         """Returns the psycopg2 PostgreSQL connection instance
 
-        :rtype: psycopg2.connection
+        :rtype: psycopg2.extensions.connection
 
         """
         return self._conn
@@ -156,7 +150,7 @@ class Session(object):
     def cursor(self):
         """Returns the cursor instance
 
-        :rtype: psycopg2._psycopg.cursor
+        :rtype: psycopg2.extensions.cursor
 
         """
         return self._cursor
@@ -193,16 +187,8 @@ class Session(object):
     def query(self, sql, parameters=None):
         """A generator to issue a query on the server, mogrifying the
         parameters against the sql statement and returning the results as an
-        iterator.
-
-        .. code:: python
-
-            for row in session.query('SELECT * FROM foo WHERE bar=%(bar)s',
-                                     {'bar': 'baz'}):
-              print row
-
-        To return the full set of rows in a single call, wrap the method with
-        list:
+        iterator. To return the full set of rows in a single call, wrap the
+        method with list:
 
         .. code:: python
 
@@ -258,7 +244,7 @@ class Session(object):
         """For use as a context manager, return a handle to this object
         instance.
 
-        :rtype: PgSQL
+        :rtype: Session
 
         """
         return self
@@ -291,7 +277,7 @@ class Session(object):
         """Connect to PostgreSQL, either by reusing a connection from the pool
         if possible, or by creating the new connection.
 
-        :rtype: psycopg2.connection
+        :rtype: psycopg2.extensions.connection
 
         """
         # Attempt to get a cached connection from the connection pool
@@ -334,7 +320,7 @@ class Session(object):
         use in async session adapters.
 
         :param dict kwargs: Keyword connection args
-        :rtype: psycopg2.connection
+        :rtype: psycopg2.extensions.connection
 
         """
         return psycopg2.connect(**kwargs)
@@ -343,7 +329,8 @@ class Session(object):
     def _register_unicode(connection):
         """Register the cursor to be able to receive Unicode string.
 
-        :param psycopg2.connection connection: The connection to register on
+        :type connection: psycopg2.extensions.connection
+        :param connection: Where to register things
 
         """
         psycopg2.extensions.register_type(psycopg2.extensions.UNICODE,
@@ -355,7 +342,8 @@ class Session(object):
     def _register_uuid(connection):
         """Register the UUID extension from the psycopg2.extra module
 
-        :param psycopg2.connection connection: The connection to register on
+        :type connection: psycopg2.extensions.connection
+        :param connection: Where to register things
 
         """
         psycopg2.extras.register_uuid(conn_or_curs=connection)

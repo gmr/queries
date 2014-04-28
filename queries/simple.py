@@ -19,7 +19,7 @@ def callproc(name, args=None, uri=DEFAULT_URI):
     :param str name: The procedure name
     :param list args: The list of arguments to pass in
     :param str uri: The PostgreSQL connection URI
-    :return: iterator
+    :rtype: iterator
 
     """
     with Session(uri) as session:
