@@ -1,6 +1,5 @@
 Queries: PostgreSQL Simplified
 ==============================
-
 *Queries* is a BSD licensed opinionated wrapper of the psycopg2_ library for
 interacting with PostgreSQL.
 

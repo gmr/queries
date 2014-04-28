@@ -31,6 +31,7 @@ from psycopg2 import extensions
 from psycopg2 import extras
 
 from queries import pool
+from queries import results
 from queries import utils
 
 LOGGER = logging.getLogger(__name__)
@@ -56,7 +57,6 @@ class Session(object):
     _cursor = None
     _tpc_id = None
     _uri = None
-    _use_pool = True
 
     # Connection status constants
     INTRANS = extensions.STATUS_IN_TRANSACTION
@@ -73,20 +73,28 @@ class Session(object):
 
     def __init__(self, uri=DEFAULT_URI,
                  cursor_factory=extras.RealDictCursor,
-                 use_pool=True):
+                 pool_idle_ttl=pool.DEFAULT_IDLE_TTL,
+                 pool_max_size=pool.DEFAULT_MAX_SIZE):
         """Connect to a PostgreSQL server using the module wide connection and
         set the isolation level.
 
         :param str uri: PostgreSQL connection URI
         :param psycopg2.extensions.cursor: The cursor type to use
-        :param bool use_pool: Use the connection pool
+        :param int pool_idle_ttl: How long idle pools keep connections open
+        :param int pool_max_size: The maximum size of the pool to use
 
         """
+        self._pool_manager = pool.PoolManager()
         self._uri = uri
-        self._use_pool = use_pool
+
+        # Ensure the pool exists in the pool manager
+        if self.pid not in self._pool_manager:
+            self._pool_manager.create(self.pid, pool_idle_ttl, pool_max_size)
+
         self._conn = self._connect()
+
         self._cursor_factory = cursor_factory
-        self._cursor = self._get_cursor()
+        self._cursor = self._get_cursor(self._conn)
         self._autocommit()
 
     @property
@@ -110,7 +118,7 @@ class Session(object):
 
         :param str name: The procedure name
         :param list args: The list of arguments to pass in
-        :rtype: iterator
+        :rtype: queries.ResultSet
         :raises: queries.DataError
         :raises: queries.DatabaseError
         :raises: queries.IntegrityError
@@ -119,14 +127,10 @@ class Session(object):
         :raises: queries.NotSupportedError
         :raises: queries.OperationalError
         :raises: queries.ProgrammingError
-        
+
         """
         self._cursor.callproc(name, args)
-        try:
-            for record in self._cursor:
-                yield record
-        except psycopg2.ProgrammingError:
-            return
+        return results.Results(self._cursor)
 
     def close(self):
         """Explicitly close the connection and remove it from the connection
@@ -138,11 +142,9 @@ class Session(object):
         if not self._conn:
             raise psycopg2.InterfaceError('Connection not open')
 
-        if self._use_pool:
-            pool.remove_connection(self.pid, self._conn)
+        self._pool_manager.remove_connection(self.pid, self._conn)
 
         # Close the connection
-        self._conn.close()
         self._conn, self._cursor = None, None
 
     @property
@@ -181,8 +183,6 @@ class Session(object):
         """
         return self._conn.notices
 
-
-
     @property
     def pid(self):
         """Return the pool ID used for connection pooling
@@ -204,7 +204,7 @@ class Session(object):
 
         :param str sql: The SQL statement
         :param dict parameters: A dictionary of query parameters
-        :rtype: iterator
+        :rtype: queries.ResultSet
         :raises: queries.DataError
         :raises: queries.DatabaseError
         :raises: queries.IntegrityError
@@ -216,11 +216,7 @@ class Session(object):
 
         """
         self._cursor.execute(sql, parameters)
-        try:
-            for record in self._cursor:
-                yield record
-        except psycopg2.ProgrammingError:
-            return
+        return results.Results(self._cursor)
 
     def set_encoding(self, value=DEFAULT_ENCODING):
         """Set the client encoding for the session if the value specified
@@ -266,53 +262,61 @@ class Session(object):
             self._cursor = None
 
         if self._conn:
+            self._pool_manager.free(self.pid, self._conn)
             self._conn = None
 
-        if self._use_pool:
-            pool.remove_session(self.pid, self)
-            pool.clean_pools()
+        self._pool_manager.clean(self.pid)
 
     def _connect(self):
         """Connect to PostgreSQL, either by reusing a connection from the pool
         if possible, or by creating the new connection.
 
         :rtype: psycopg2.extensions.connection
+        :raises: pool.NoIdleConnectionsError
 
         """
         # Attempt to get a cached connection from the connection pool
-        if self._use_pool and pool.has_idle_connection(self.pid):
-            connection = pool.get_connection(self.pid)
-            if connection:
-                self._from_pool = True
-                return connection
+        try:
+            connection = self._pool_manager.get(self.pid, self)
+        except pool.NoIdleConnectionsError:
+            if self._pool_manager.is_full(self.pid):
+                raise
 
-        # Create a new PostgreSQL connection
-        kwargs = utils.uri_to_kwargs(self._uri)
-        connection = self._psycopg2_connect(kwargs)
+            # Create a new PostgreSQL connection
+            kwargs = utils.uri_to_kwargs(self._uri)
+            connection = self._psycopg2_connect(kwargs)
 
-        # Add it to the pool, if pooling is enabled
-        if self._use_pool:
-            pool.add_connection(self.pid, self, connection)
+            self._pool_manager.add(self.pid, connection)
+            self._pool_manager.lock(self.pid, connection, self)
 
-        # Added in because psycopg2ct connects and leaves the connection in
-        # a weird state: consts.STATUS_DATESTYLE, returning from
-        # Connection._setup without setting the state as const.STATUS_OK
-        if PYPY:
-            connection.reset()
+            # Added in because psycopg2ct connects and leaves the connection in
+            # a weird state: consts.STATUS_DATESTYLE, returning from
+            # Connection._setup without setting the state as const.STATUS_OK
+            if PYPY:
+                connection.reset()
 
-        # Register the custom data types
-        self._register_unicode(connection)
-        self._register_uuid(connection)
+            # Register the custom data types
+            self._register_unicode(connection)
+            self._register_uuid(connection)
 
         return connection
 
-    def _get_cursor(self):
-        """Return a cursor for the given cursor_factory.
+    def _get_cursor(self, connection, name=None):
+        """Return a cursor for the given cursor_factory. Specify a name to
+        use server-side cursors.
 
+        :param connection: The connection to create a cursor on
+        :type connection: psycopg2.extensions.connection
+        :param str name: A cursor name for a server side cursor
         :rtype: psycopg2.extensions.cursor
 
         """
-        return self._conn.cursor(cursor_factory=self._cursor_factory)
+        cursor = connection.cursor(name=name,
+                                   cursor_factory=self._cursor_factory)
+        if name is not None:
+            cursor.scrollable = True
+            cursor.withhold = True
+        return cursor
 
     def _psycopg2_connect(self, kwargs):
         """Return a psycopg2 connection for the specified kwargs. Extend for

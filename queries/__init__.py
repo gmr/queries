@@ -42,6 +42,7 @@ logging.getLogger('queries').addHandler(NullHandler())
 DEFAULT_URI = 'pgsql://localhost:5432'
 
 # Mappings to queries classes and methods
+from queries.results import Results
 from queries.session import Session
 
 try:

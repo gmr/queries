@@ -28,10 +28,28 @@ from tornado import stack_context
 import psycopg2
 
 from queries import pool
+from queries import results
 from queries import session
+from queries import utils
 from queries import DEFAULT_URI
+from queries import PYPY
 
 LOGGER = logging.getLogger(__name__)
+
+class Results(results.Results):
+    """Class that is created for each query that allows for the use of query
+    results...
+
+    """
+    def __init__(self, cursor, cleanup, fd):
+        self.cursor = cursor
+        self._cleanup = cleanup
+        self._fd = fd
+
+    @gen.coroutine
+    def release(self):
+        yield self._cleanup(self.cursor, self._fd)
+
 
 
 class TornadoSession(session.Session):
@@ -50,34 +68,37 @@ class TornadoSession(session.Session):
         :py:meth:`cursor.fetchall`.
 
     :param str uri: PostgreSQL connection URI
-    :param psycopg2.cursor: The cursor type to use
-    :param bool use_pool: Use the connection pool
-    :param int max_pool_size: Maximum number of connections for a single URI
+    :param psycopg2.extensions.cursor: The cursor type to use
+    :param int pool_idle_ttl: How long idle pools keep connections open
+    :param int pool_max_size: The maximum size of the pool to use
 
     """
-    def __init__(self,
-                 uri=DEFAULT_URI,
+    def __init__(self, uri=DEFAULT_URI,
                  cursor_factory=extras.RealDictCursor,
-                 use_pool=True,
-                 max_pool_size=pool.MAX_SIZE):
+                 pool_idle_ttl=pool.DEFAULT_IDLE_TTL,
+                 pool_max_size=pool.DEFAULT_MAX_SIZE):
         """Connect to a PostgreSQL server using the module wide connection and
         set the isolation level.
 
         :param str uri: PostgreSQL connection URI
         :param psycopg2.extensions.cursor: The cursor type to use
-        :param bool use_pool: Use the connection pool
-        :param int max_pool_size: Max number of connections for a single URI
+        :param int pool_idle_ttl: How long idle pools keep connections open
+        :param int pool_max_size: The maximum size of the pool to use
 
         """
         self._callbacks = dict()
-        self._listeners = dict()
         self._connections = dict()
-        self._commands = dict()
-        self._cursor_factory = cursor_factory
         self._exceptions = dict()
+        self._listeners = dict()
+
+        self._cursor_factory = cursor_factory
         self._ioloop = ioloop.IOLoop.instance()
+        self._pool_manager = pool.PoolManager.instance()
         self._uri = uri
-        self._use_pool = use_pool
+
+        # Ensure the pool exists in the pool manager
+        if self.pid not in self._pool_manager:
+            self._pool_manager.create(self.pid, pool_idle_ttl, pool_max_size)
 
     @gen.coroutine
     def callproc(self, name, args=None):
@@ -98,44 +119,27 @@ class TornadoSession(session.Session):
         :raises: queries.ProgrammingError
 
         """
-        # Grab a connection, either new or out of the pool
-        connection, fd, status = self._connect()
+        conn = yield self._connect()
 
-        # Add a callback for either connecting or waiting for the query
-        self._callbacks[fd] = yield gen.Callback((self, fd))
-
-        # Add the connection to the IOLoop
-        self._ioloop.add_handler(connection.fileno(), self._on_io_events,
-                                 ioloop.IOLoop.WRITE)
-
-        # Maybe wait for the connection
-        if status == self.SETUP and connection.poll() != extensions.POLL_OK:
-            yield gen.Wait((self, fd))
-            # Setup the callback for the actual query
-            self._callbacks[fd] = yield gen.Callback((self, fd))
+        # Setup a callback to wait on the query result
+        self._callbacks[conn.fileno()] = yield gen.Callback((self,
+                                                             conn.fileno()))
 
         # Get the cursor, execute the query and wait for the result
-        cursor = self._get_cursor(connection)
+        cursor = self._get_cursor(conn)
         cursor.callproc(name, args)
-        yield gen.Wait((self, fd))
+        yield gen.Wait((self, conn.fileno()))
 
         # If there was an exception, cleanup, then raise it
-        if fd in self._exceptions and self._exceptions[fd]:
-            error = self._exceptions[fd]
-            self._exec_cleanup(cursor, fd)
+        if (conn.fileno() in self._exceptions and
+                self._exceptions[conn.fileno()]):
+            error = self._exceptions[conn.fileno()]
+            self._exec_cleanup(cursor, conn.fileno())
             raise error
 
-        # Attempt to get any result that's pending for the query
-        try:
-            result = cursor.fetchall()
-        except psycopg2.ProgrammingError:
-            result = []
-
-        # Close the cursor and cleanup the references for this request
-        self._exec_cleanup(cursor, fd)
-
         # Return the result if there are any
-        raise gen.Return(result)
+        cleanup = yield gen.Callback((self, self._exec_cleanup))
+        raise gen.Return(Results(cursor, cleanup, conn.fileno()))
 
     @gen.coroutine
     def listen(self, channel, callback):
@@ -146,27 +150,13 @@ class TornadoSession(session.Session):
         :param method callback: The method to call on each notification
 
         """
-        # Grab a connection, either new or out of the pool
-        connection, fd, status = self._connect()
-
-        # Add a callback for either connecting or waiting for the query
-        self._callbacks[fd] = yield gen.Callback((self, fd))
-
-        # Add the connection to the IOLoop
-        self._ioloop.add_handler(connection.fileno(), self._on_io_events,
-                                 ioloop.IOLoop.WRITE)
-
-        # Maybe wait for the connection
-        if status == self.SETUP and connection.poll() != extensions.POLL_OK:
-            yield gen.Wait((self, fd))
-            # Setup the callback for the actual query
-            self._callbacks[fd] = yield gen.Callback((self, fd))
+        conn = yield self._connect()
 
         # Get the cursor
-        cursor = self._get_cursor(connection)
+        cursor = self._get_cursor(conn)
 
         # Add the channel and callback to the class level listeners
-        self._listeners[channel] = (fd, cursor)
+        self._listeners[channel] = (conn.fileno(), cursor)
 
         # Send the LISTEN to PostgreSQL
         cursor.execute("LISTEN %s" % channel)
@@ -175,16 +165,17 @@ class TornadoSession(session.Session):
         while channel in self._listeners and self._listeners[channel]:
 
             # Wait for an event on that FD
-            yield gen.Wait((self, fd))
+            yield gen.Wait((self, conn.fileno()))
 
             # Iterate through all of the notifications
-            while connection.notifies:
-                notify = connection.notifies.pop()
+            while conn.notifies:
+                notify = conn.notifies.pop()
                 callback(channel, notify.pid, notify.payload)
 
             # Set a new callback for the fd if we're not exiting
             if channel in self._listeners:
-                self._callbacks[fd] = yield gen.Callback((self, fd))
+                self._callbacks[conn.fileno()] = \
+                    yield gen.Callback((self, conn.fileno()))
 
     @gen.coroutine
     def query(self, sql, parameters=None):
@@ -205,47 +196,27 @@ class TornadoSession(session.Session):
         :raises: queries.ProgrammingError
 
         """
-        # Grab a connection, either new or out of the pool
-        connection, fd, status = self._connect()
+        conn = yield self._connect()
 
-        # Add a callback for either connecting or waiting for the query
-        self._callbacks[fd] = yield gen.Callback((self, fd))
-
-        # Add the connection to the IOLoop
-        self._ioloop.add_handler(connection.fileno(), self._on_io_events,
-                                 ioloop.IOLoop.WRITE)
-
-        # Maybe wait for the connection
-        if status == self.SETUP and connection.poll() != extensions.POLL_OK:
-            yield gen.Wait((self, fd))
-            # Setup the callback for the actual query
-            self._callbacks[fd] = yield gen.Callback((self, fd))
+        # Setup a callback to wait on the query result
+        self._callbacks[conn.fileno()] = yield gen.Callback((self,
+                                                             conn.fileno()))
 
         # Get the cursor, execute the query and wait for the result
-        cursor = self._get_cursor(connection)
+        cursor = self._get_cursor(conn)
         cursor.execute(sql, parameters)
-        yield gen.Wait((self, fd))
+        yield gen.Wait((self, conn.fileno()))
+        del self._callbacks[conn.fileno()]
 
         # If there was an exception, cleanup, then raise it
-        if fd in self._exceptions and self._exceptions[fd]:
-            error = self._exceptions[fd]
-            self._exec_cleanup(cursor, fd)
+        if (conn.fileno() in self._exceptions and
+                self._exceptions[conn.fileno()]):
+            error = self._exceptions[conn.fileno()]
+            self._exec_cleanup(cursor, conn.fileno())
             raise error
 
-        # Carry the row count to return to the caller
-        row_count = cursor.rowcount
-
-        # Attempt to get any result that's pending for the query
-        try:
-            result = cursor.fetchall()
-        except psycopg2.ProgrammingError:
-            result = []
-
-        # Close the cursor and cleanup the references for this request
-        self._exec_cleanup(cursor, fd)
-
         # Return the result if there are any
-        raise gen.Return((row_count, result))
+        raise gen.Return(Results(cursor, self._exec_cleanup, conn.fileno()))
 
     @gen.coroutine
     def unlisten(self, channel):
@@ -273,21 +244,72 @@ class TornadoSession(session.Session):
         # Close the cursor and cleanup the references for this request
         self._exec_cleanup(cursor, fd)
 
+    @gen.coroutine
     def _connect(self):
-        """Connect to PostgreSQL and setup a few variables and data structures
-        to reduce code in the coroutine methods.
+        """Connect to PostgreSQL, either by reusing a connection from the pool
+        if possible, or by creating the new connection.
 
-        :return tuple: psycopg2.extensions.connection, int, int
+        :rtype: psycopg2.extensions.connection
+        :raises: pool.NoIdleConnectionsError
 
         """
-        connection = super(TornadoSession, self)._connect()
-        fd, status = connection.fileno(), connection.status
+        # Attempt to get a cached connection from the connection pool
+        try:
+            connection = self._pool_manager.get(self.pid, self)
 
-        # Add the connection for use in _poll_connection
-        self._connections[fd] = connection
+            self._connections[connection.fileno()] = connection
+            self._callbacks[connection.fileno()] = None
+            self._exceptions[connection.fileno()] = None
 
-        return connection, fd, status
+            # Add the connection to the IOLoop
+            self._ioloop.add_handler(connection.fileno(), self._on_io_events,
+                                     ioloop.IOLoop.WRITE)
 
+        except pool.NoIdleConnectionsError:
+            # "Block" while the pool is full
+            while self._pool_manager.is_full(self.pid):
+                LOGGER.warning('Pool %s is full, waiting 100ms', self.pid)
+                timeout = yield gen.Callback((self, 'connect'))
+                self._ioloop.add_timeout(100, timeout)
+                yield gen.Wait((self, 'connect'))
+
+            # Create a new PostgreSQL connection
+            kwargs = utils.uri_to_kwargs(self._uri)
+            connection = self._psycopg2_connect(kwargs)
+            fd = connection.fileno()
+
+            # Add the connection for use in _poll_connection
+            self._connections[fd] = connection
+            self._exceptions[fd] = None
+
+            # Add a callback for either connecting or waiting for the query
+            self._callbacks[fd] = yield gen.Callback((self, fd))
+
+            # Add the connection to the IOLoop
+            self._ioloop.add_handler(connection.fileno(), self._on_io_events,
+                                     ioloop.IOLoop.WRITE)
+
+            # Wait for the connection
+            yield gen.Wait((self, fd))
+            del self._callbacks[fd]
+
+            # Add the connection to the pool
+            self._pool_manager.add(self.pid, connection)
+            self._pool_manager.lock(self.pid, connection, self)
+
+            # Added in because psycopg2ct connects and leaves the connection in
+            # a weird state: consts.STATUS_DATESTYLE, returning from
+            # Connection._setup without setting the state as const.STATUS_OK
+            if PYPY:
+                connection.reset()
+
+            # Register the custom data types
+            self._register_unicode(connection)
+            self._register_uuid(connection)
+
+        raise gen.Return(connection)
+
+    @gen.engine
     def _exec_cleanup(self, cursor, fd):
         """Close the cursor, remove any references to the fd in internal state
         and remove the fd from the ioloop.
@@ -297,22 +319,17 @@ class TornadoSession(session.Session):
 
         """
         cursor.close()
+        self._pool_manager.free(self.pid, self._connections[fd])
+
         if fd in self._exceptions:
             del self._exceptions[fd]
         if fd in self._callbacks:
             del self._callbacks[fd]
         if fd in self._connections:
             del self._connections[fd]
+
         self._ioloop.remove_handler(fd)
-
-    def _get_cursor(self, connection):
-        """Return a cursor for the given connection.
-
-        :param psycopg2.extensions.connection connection: The connection to use
-        :rtype: psycopg2.extensions.cursor
-
-        """
-        return connection.cursor(cursor_factory=self._cursor_factory)
+        raise gen.Return()
 
     @gen.coroutine
     def _on_io_events(self, fd=None, events=None):
