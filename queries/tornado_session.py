@@ -83,12 +83,11 @@ class TornadoSession(session.Session):
     def callproc(self, name, args=None):
         """Call a stored procedure asynchronously on the server, passing in the
         arguments to be passed to the stored procedure, returning the results
-        as a list. If no results are returned, the method will return None
-        instead.
+        as a tuple of row count and result set.
 
         :param str name: The stored procedure name
         :param list args: An optional list of procedure arguments
-        :rtype: list or None
+        :rtype: list
 
         """
         # Grab a connection, either new or out of the pool
@@ -122,7 +121,7 @@ class TornadoSession(session.Session):
         try:
             result = cursor.fetchall()
         except psycopg2.ProgrammingError:
-            result = None
+            result = []
 
         # Close the cursor and cleanup the references for this request
         self._exec_cleanup(cursor, fd)
@@ -182,11 +181,12 @@ class TornadoSession(session.Session):
     @gen.coroutine
     def query(self, sql, parameters=None):
         """Issue a query asynchronously on the server, mogrifying the
-        parameters against the sql statement and yielding the results as list.
+        parameters against the sql statement and yielding the results as a
+        tuple of row count and result set.
 
         :param str sql: The SQL statement
         :param dict parameters: A dictionary of query parameters
-        :rtype: list or None
+        :return tuple: (row_count, rows)
 
         """
         # Grab a connection, either new or out of the pool
@@ -216,17 +216,20 @@ class TornadoSession(session.Session):
             self._exec_cleanup(cursor, fd)
             raise error
 
+        # Carry the row count to return to the caller
+        row_count = cursor.rowcount
+
         # Attempt to get any result that's pending for the query
         try:
             result = cursor.fetchall()
         except psycopg2.ProgrammingError:
-            result = None
+            result = []
 
         # Close the cursor and cleanup the references for this request
         self._exec_cleanup(cursor, fd)
 
         # Return the result if there are any
-        raise gen.Return(result)
+        raise gen.Return((row_count, result))
 
     @gen.coroutine
     def unlisten(self, channel):
