@@ -86,15 +86,9 @@ class TornadoSession(session.Session):
         as a list. If no results are returned, the method will return None
         instead.
 
-        Example:
-
-        .. code:: python
-
-            data = yield session.callproc('char', [65])
-
         :param str name: The stored procedure name
         :param list args: An optional list of procedure arguments
-        :rtype: list | None
+        :rtype: list or None
 
         """
         # Grab a connection, either new or out of the pool
@@ -140,32 +134,6 @@ class TornadoSession(session.Session):
     def listen(self, channel, callback):
         """Listen for notifications from PostgreSQL on the specified channel,
         passing in a callback to receive the notifications.
-
-        Example:
-
-        .. code:: python
-
-            class ListenHandler(web.RequestHandler):
-
-                def initialize(self):
-                    self.channel = 'example'
-                    self.session = queries.TornadoSession()
-
-                @gen.coroutine
-                def get(self, *args, **kwargs):
-                    yield self.session.listen(self.channel,
-                                              self.on_notification)
-                    self.finish()
-
-                def on_connection_close(self):
-                    if self.channel:
-                        self.session.unlisten(self.channel)
-                        self.channel = None
-
-                @gen.coroutine
-                def on_notification(self, channel, pid, payload):
-                    self.write('Payload: %s\\n' % payload)
-                    yield gen.Task(self.flush)
 
         :param str channel: The channel to stop listening on
         :param method callback: The method to call on each notification
@@ -216,16 +184,9 @@ class TornadoSession(session.Session):
         """Issue a query asynchronously on the server, mogrifying the
         parameters against the sql statement and yielding the results as list.
 
-        Example:
-
-        .. code:: python
-
-            data = yield session.query('SELECT * FROM foo WHERE bar=%(bar)s',
-                                       {'bar': 'baz'}):
-
         :param str sql: The SQL statement
         :param dict parameters: A dictionary of query parameters
-        :rtype: list
+        :rtype: list or None
 
         """
         # Grab a connection, either new or out of the pool
@@ -269,13 +230,8 @@ class TornadoSession(session.Session):
 
     @gen.coroutine
     def unlisten(self, channel):
-        """Cancel a listening on a channel.
-
-        Example:
-
-        .. code:: python
-
-            yield self.session.unlisten('channel-name')
+        """Cancel a listening to notifications on a PostgreSQL notification
+        channel.
 
         :param str channel: The channel to stop listening on
 
@@ -374,6 +330,26 @@ class TornadoSession(session.Session):
             elif state == extensions.POLL_ERROR:
                 LOGGER.debug('Error')
                 self._ioloop.remove_handler(fd)
+
+    @property
+    def connection(self):
+        """The connection property is not supported in
+        :py:class:`~queries.TornadoSession`.
+
+        :rtype: None
+
+        """
+        return None
+
+    @property
+    def cursor(self):
+        """The cursor property is not supported in
+        :py:class:`~queries.TornadoSession`.
+
+        :rtype: None
+
+        """
+        return None
 
     def _psycopg2_connect(self, kwargs):
         """Return a psycopg2 connection for the specified kwargs. Extend for

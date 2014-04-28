@@ -2,9 +2,14 @@ TornadoSession Asynchronous API
 ===============================
 Use a Queries Session asynchronously within the `Tornado <http://www.tornadoweb.org>`_ framework.
 
+.. note:: Currently, due to the nature of how the connection pool is managed, transactions
+    are not supported. Transaction support is expected to be added in a subsequent
+    release.
+
 Example Use
 -----------
-The following :py:class:`~tornado.web.RequestHandler` example will return a JSON document containing the query results.
+The following :py:class:`~tornado.web.RequestHandler` example will return a
+JSON document containing the query results.
 
 .. code:: python
 
@@ -20,6 +25,8 @@ The following :py:class:`~tornado.web.RequestHandler` example will return a JSON
         def get(self):
             data = yield self.session.query('SELECT * FROM names')
             self.finish({'data': data})
+
+See the :doc:`examples/index` for more :py:meth:`~queries.TornadoSession` examples.
 
 Class Documentation
 -------------------
