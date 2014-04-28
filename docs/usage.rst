@@ -37,8 +37,8 @@ methods.
 Examples
 --------
 The following examples demonstrate various aspects of the Queries API. For more
-detailed examples and documentation, visit the :doc:`simple`, :doc:`session`, and
-:doc:`tornado_session` pages.
+detailed examples and documentation, visit the :doc:`simple`, :doc:`session`,
+:doc:`results`, and :doc:`tornado_session` pages.
 
 Using queries.uri to generate a URI from individual arguments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

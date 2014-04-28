@@ -1,5 +1,5 @@
 """
-Query or StoredProc Resultset
+query or callproc Results
 
 """
 import logging
@@ -9,20 +9,17 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Results(object):
-    """Class that is created for each query that allows for the use of query
-    results...
+    """The :py:class:`Results` class contains the results returned from
+    :py:meth:`Session.query <queries.Session.query>` and
+    :py:meth:`Session.callproc <queries.Session.callproc>`. It is able to act
+    as an iterator and provides many different methods for accessing the
+    information about and results from a query.
 
     """
     def __init__(self, cursor, cleanup=None, fd=None):
         self.cursor = cursor
         self._cleanup = cleanup
         self._fd = fd
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
-
-    def __enter__(self):
-        return self
 
     def __getitem__(self, item):
         """Fetch an individual row from the result set
@@ -63,6 +60,13 @@ class Results(object):
         return '<queries.%s rows=%s>' % (self.__class__.__name__, len(self))
 
     def as_dict(self):
+        """Return a single row result as a dictionary. If the results contain
+        multiple rows, a :py:class:`ValueError` will be raised.
+
+        :return: dict
+        :raises: ValueError
+
+        """
         if not self.cursor.rowcount:
             return 0
 
@@ -80,6 +84,13 @@ class Results(object):
         """
         return self.cursor.rowcount
 
+    def free(self):
+        """Used in asynchronous sessions for freeing results and their locked
+        connections.
+
+        """
+        LOGGER.warning("Released results in queries.Session")
+
     def items(self):
         """Return all of the rows that are in the result set.
 
@@ -88,10 +99,6 @@ class Results(object):
         """
         self.cursor.scroll(0, 'absolute')
         return self.cursor.fetchall()
-
-    def release(self):
-        """Release the results, only used in async children"""
-        LOGGER.warning("Released results in queries.Session")
 
     @property
     def rownumber(self):

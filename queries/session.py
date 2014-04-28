@@ -108,17 +108,12 @@ class Session(object):
         return self._conn.get_backend_pid()
 
     def callproc(self, name, args=None):
-        """Call a stored procedure on the server and return an iterator of the
-        result set for easy access to the data. To return the full set of rows
-        in a single call, wrap the method with list:
-
-        .. code:: python
-
-            rows = list(session.callproc('chr', [65]))
+        """Call a stored procedure on the server, returning the results in a
+        :py:class:`queries.Results` instance.
 
         :param str name: The procedure name
         :param list args: The list of arguments to pass in
-        :rtype: queries.ResultSet
+        :rtype: queries.Results
         :raises: queries.DataError
         :raises: queries.DatabaseError
         :raises: queries.IntegrityError
@@ -194,17 +189,13 @@ class Session(object):
 
     def query(self, sql, parameters=None):
         """A generator to issue a query on the server, mogrifying the
-        parameters against the sql statement and returning the results as an
-        iterator. To return the full set of rows in a single call, wrap the
-        method with list:
-
-        .. code:: python
-
-            rows = list(session.query('SELECT * FROM foo WHERE id=%s', [1]))
+        parameters against the sql statement. Results are returned as a
+        :py:class:`queries.Results` object which can act as an iterator and
+        has multiple ways to access the result data.
 
         :param str sql: The SQL statement
         :param dict parameters: A dictionary of query parameters
-        :rtype: queries.ResultSet
+        :rtype: queries.Results
         :raises: queries.DataError
         :raises: queries.DatabaseError
         :raises: queries.IntegrityError

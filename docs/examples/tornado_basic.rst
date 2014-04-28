@@ -33,7 +33,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Let the caller know what methods are supported
 
             :param list args: URI path arguments passed in by Tornado
-            :param dict kwargs: URI path keyword arguments passed in by Tornado
+            :param list args: URI path keyword arguments passed in by Tornado
 
             """
             self.set_header('Allow', ', '.join(['DELETE', 'GET', 'POST', 'PUT']))
@@ -45,7 +45,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Delete a widget from the database
 
             :param list args: URI path arguments passed in by Tornado
-            :param dict kwargs: URI path keyword arguments passed in by Tornado
+            :param list args: URI path keyword arguments passed in by Tornado
 
             """
             # We need a SKU, if it wasn't passed in the URL, return an error
@@ -55,21 +55,23 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
 
             # Delete the widget from the database by SKU
             else:
-                rows, data = yield self.session.query("DELETE FROM widgets WHERE sku=%(sku)s",
-                                                      {'sku': kwargs['sku']})
-                if not rows:
+                results = yield self.session.query("DELETE FROM widgets WHERE sku=%(sku)s",
+                                                   {'sku': kwargs['sku']})
+                if not results:
                     self.set_status(404)
                     self.finish({'error': 'SKU not found in system'})
                 else:
                     self.set_status(204)  # Success, but no data returned
                     self.finish()
 
+                results.release()
+
         @gen.coroutine
         def get(self, *args, **kwargs):
             """Fetch a widget from the database
 
             :param list args: URI path arguments passed in by Tornado
-            :param dict kwargs: URI path keyword arguments passed in by Tornado
+            :param list args: URI path keyword arguments passed in by Tornado
 
             """
             # We need a SKU, if it wasn't passed in the URL, return an error
@@ -79,24 +81,26 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
 
             # Fetch a row from the database for the SKU
             else:
-                rows, data = yield self.session.query("SELECT * FROM widgets WHERE sku=%(sku)s",
-                                                      {'sku': kwargs['sku']})
+                results = yield self.session.query("SELECT * FROM widgets WHERE sku=%(sku)s",
+                                                   {'sku': kwargs['sku']})
 
                 # No rows returned, send a 404 with a JSON error payload
-                if not rows:
+                if not results:
                     self.set_status(404)
                     self.finish({'error': 'SKU not found in system'})
 
                 # Send back the row as a JSON object
                 else:
-                    self.finish(data[0])
+                    self.finish(results.as_dict())
+
+                results.release()
 
         @gen.coroutine
         def post(self, *args, **kwargs):
             """Update a widget in the database
 
             :param list args: URI path arguments passed in by Tornado
-            :param dict kwargs: URI path keyword arguments passed in by Tornado
+            :param list args: URI path keyword arguments passed in by Tornado
 
             """
             # We need a SKU, if it wasn't passed in the URL, return an error
@@ -109,10 +113,11 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
 
                 sql = "UPDATE widgets SET name=%(name)s, qty=%(qty)s WHERE sku=%(sku)s"
                 try:
-                    rows, result = yield self.session.query(sql,
-                                                            {'sku': kwargs['sku'],
-                                                             'name': self.get_argument('name'),
-                                                             'qty': self.get_argument('qty')})
+                    results = yield self.session.query(sql,
+                                                       {'sku': kwargs['sku'],
+                                                        'name': self.get_argument('name'),
+                                                        'qty': self.get_argument('qty')})
+                    results.release()
 
                 # DataError is raised when there's a problem with the data passed in
                 except queries.DataError as error:
@@ -121,7 +126,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
 
                 else:
                     # No rows means there was no record updated
-                    if not rows:
+                    if not results:
                         self.set_status(404)
                         self.finish({'error': 'SKU not found in system'})
 
@@ -135,14 +140,15 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Add a widget to the database
 
             :param list args: URI path arguments passed in by Tornado
-            :param dict kwargs: URI path keyword arguments passed in by Tornado
+            :param list args: URI path keyword arguments passed in by Tornado
 
             """
             try:
-                yield self.session.query("INSERT INTO widgets VALUES (%s, %s, %s)",
-                                         [self.get_argument('sku'),
-                                          self.get_argument('name'),
-                                          self.get_argument('qty')])
+                results = yield self.session.query("INSERT INTO widgets VALUES (%s, %s, %s)",
+                                                   [self.get_argument('sku'),
+                                                    self.get_argument('name'),
+                                                    self.get_argument('qty')])
+                results.release()
             except (queries.DataError,
                     queries.IntegrityError) as error:
                 self.set_status(409)
@@ -166,7 +172,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Let the caller know what methods are supported
 
             :param list args: URI path arguments passed in by Tornado
-            :param dict kwargs: URI path keyword arguments passed in by Tornado
+            :param list args: URI path keyword arguments passed in by Tornado
 
             """
             self.set_header('Allow', ', '.join(['GET']))
@@ -178,19 +184,20 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Get a list of all the widgets from the database
 
             :param list args: URI path arguments passed in by Tornado
-            :param dict kwargs: URI path keyword arguments passed in by Tornado
+            :param list args: URI path keyword arguments passed in by Tornado
 
             """
-            rows, data = yield self.session.query("SELECT * FROM widgets ORDER BY sku")
+            results = yield self.session.query('SELECT * FROM widgets ORDER BY sku')
 
             # Tornado doesn't allow you to return a list as a JSON result by default
-            self.finish({'widgets': data})
+            self.finish({'widgets': results.items()})
+            results.release()
 
 
     if __name__ == "__main__":
         application = web.Application([
             (r"/widget", WidgetRequestHandler),
-            (r"/widget/(?P<sku>[a-z0-9]{10})", WidgetRequestHandler),
+            (r"/widget/(?P<sku>[a-zA-Z0-9]{10})", WidgetRequestHandler),
             (r"/widgets", WidgetsRequestHandler)
         ]).listen(8888)
         ioloop.IOLoop.instance().start()

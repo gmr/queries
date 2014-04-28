@@ -45,6 +45,7 @@ Contents
    usage
    simple
    session
+   results
    tornado_session
    examples/index.rst
    history

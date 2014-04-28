@@ -14,8 +14,9 @@ Example Use:
 
         @gen.coroutine
         def get(self):
-            data = yield self.session.query('SELECT * FROM names')
-            self.finish({'data': data})
+            results = yield self.session.query('SELECT * FROM names')
+            self.finish({'data': results.items()})
+            results.free()
 
 """
 import logging
@@ -36,9 +37,62 @@ from queries import PYPY
 
 LOGGER = logging.getLogger(__name__)
 
+
 class Results(results.Results):
-    """Class that is created for each query that allows for the use of query
-    results...
+    """A TornadoSession specific :py:class:`queries.Results` class that adds
+    the :py:meth:`Results.free <queries.tornado_session.Results.free>` method.
+    The :py:meth:`Results.free <queries.tornado_session.Results.free>` method
+    **must** be called to free the connection that the results were generated
+    on. `Results` objects that are not freed will cause the connections to
+    remain locked and your application will eventually run out of connections
+    in the pool.
+
+    The following examples illustrate the various behaviors that the
+    ::py:class:`queries.Results <queries.tornado_session.Requests>` class
+    implements:
+
+    **Using Results as an Iterator**
+
+    .. code:: python
+
+        results = yield session.query('SELECT * FROM foo')
+        for row in results
+            print row
+        results.free()
+
+    **Accessing an individual row by index**
+
+    .. code:: python
+
+        results = yield session.query('SELECT * FROM foo')
+        print results[1]  # Access the second row of the results
+        results.free()
+
+    **Casting single row results as a dict**
+
+    .. code:: python
+
+        results = yield session.query('SELECT * FROM foo LIMIT 1')
+        print results.as_dict()
+        results.free()
+
+    **Checking to see if a query was successful**
+
+    .. code:: python
+
+        sql = "UPDATE foo SET bar='baz' WHERE qux='corgie'"
+        results = yield session.query(sql)
+        if results:
+            print 'Success'
+        results.free()
+
+    **Checking the number of rows by using len(Results)**
+
+    .. code:: python
+
+        results = yield session.query('SELECT * FROM foo')
+        print '%i rows' % len(results)
+        results.free()
 
     """
     def __init__(self, cursor, cleanup, fd):
@@ -47,9 +101,16 @@ class Results(results.Results):
         self._fd = fd
 
     @gen.coroutine
-    def release(self):
-        yield self._cleanup(self.cursor, self._fd)
+    def free(self):
+        """Release the results and connection lock from the TornadoSession
+        object. This **must** be called after you finish processing the results
+        from :py:meth:`TornadoSession.query <queries.TornadoSession.query>` or
+        :py:meth:`TornadoSession.callproc <queries.TornadoSession.callproc>`
+        or the connection will not be able to be reused by other asynchronous
+        requests.
 
+        """
+        yield self._cleanup(self.cursor, self._fd)
 
 
 class TornadoSession(session.Session):
@@ -60,12 +121,9 @@ class TornadoSession(session.Session):
     queries do not block each other. Heavily trafficked services will require
     a higher ``max_pool_size`` to allow for greater connection concurrency.
 
-    .. Note:: Unlike :py:meth:`Session.query <queries.Session.query>` and
-        :py:meth:`Session.callproc <queries.Session.callproc>`, the
-        :py:meth:`TornadoSession.query <queries.TornadoSession.query>` and
-        :py:meth:`TornadoSession.callproc <queries.TornadoSession.callproc>`
-        methods are not iterators and will return the full result set using
-        :py:meth:`cursor.fetchall`.
+    :py:meth:`TornadoSession.query <queries.TornadoSession.query>` and
+    :py:meth:`TornadoSession.callproc <queries.TornadoSession.callproc>` must
+    call :py:meth:`Results.free <queries.tornado_session.Results.free>`
 
     :param str uri: PostgreSQL connection URI
     :param psycopg2.extensions.cursor: The cursor type to use
@@ -103,12 +161,16 @@ class TornadoSession(session.Session):
     @gen.coroutine
     def callproc(self, name, args=None):
         """Call a stored procedure asynchronously on the server, passing in the
-        arguments to be passed to the stored procedure, returning the results
-        as a tuple of row count and result set.
+        arguments to be passed to the stored procedure, yielding the results
+        as a :py:class:`Results <queries.tornado_session.Results>` object.
+
+        You **must** free the results that are returned by this method to
+        unlock the connection used to perform the query. Failure to do so
+        will cause your Tornado application to run out of connections.
 
         :param str name: The stored procedure name
         :param list args: An optional list of procedure arguments
-        :return tuple: int, list
+        :rtype: Results
         :raises: queries.DataError
         :raises: queries.DatabaseError
         :raises: queries.IntegrityError
@@ -180,12 +242,16 @@ class TornadoSession(session.Session):
     @gen.coroutine
     def query(self, sql, parameters=None):
         """Issue a query asynchronously on the server, mogrifying the
-        parameters against the sql statement and yielding the results as a
-        tuple of row count and result set.
+        parameters against the sql statement and yielding the results
+        as a :py:class:`Results <queries.tornado_session.Results>` object.
+
+        You **must** free the results that are returned by this method to
+        unlock the connection used to perform the query. Failure to do so
+        will cause your Tornado application to run out of connections.
 
         :param str sql: The SQL statement
         :param dict parameters: A dictionary of query parameters
-        :return tuple: int, list
+        :rtype: Results
         :raises: queries.DataError
         :raises: queries.DatabaseError
         :raises: queries.IntegrityError
@@ -369,22 +435,10 @@ class TornadoSession(session.Session):
 
     @property
     def connection(self):
-        """The connection property is not supported in
-        :py:class:`~queries.TornadoSession`.
-
-        :rtype: None
-
-        """
         return None
 
     @property
     def cursor(self):
-        """The cursor property is not supported in
-        :py:class:`~queries.TornadoSession`.
-
-        :rtype: None
-
-        """
         return None
 
     def _psycopg2_connect(self, kwargs):

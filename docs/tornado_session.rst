@@ -2,10 +2,16 @@ TornadoSession Asynchronous API
 ===============================
 Use a Queries Session asynchronously within the `Tornado <http://www.tornadoweb.org>`_ framework.
 
-.. note:: Currently, due to the nature of how the connection pool is managed, transactions
-    are not supported. Transaction support is expected to be added in a subsequent
-    release. Queries executed are still atomic and will raise an exception if there are
-    any errors.
+The :py:class:`TornadoSession <queries.TornadoSession>` class is optimized for
+asynchronous concurrency. Each call to
+:py:meth:`TornadoSession.callproc <queries.TornadoSession.callproc>` or
+:py:meth:`TornadoSession.query <queries.TornadoSession.query>` grabs a free
+connection from the connection pool and requires that the results that are r
+returned as a
+:py:class:`Results <queries.tornado_session.Results>` object are freed via the
+:py:meth:`Results.free <queries.tornado_session.Results.free>` method. Doing
+so will release the free the `Results` object data and release the lock on
+the connection so that other queries are able to use the connection.
 
 Example Use
 -----------
@@ -24,8 +30,9 @@ JSON document containing the query results.
 
         @gen.coroutine
         def get(self):
-            rows, data = yield self.session.query('SELECT * FROM names')
-            self.finish({'data': data})
+            results = yield self.session.query('SELECT * FROM names')
+            self.finish({'data': data.items()})
+            results.free()
 
 See the :doc:`examples/index` for more :py:meth:`~queries.TornadoSession` examples.
 
@@ -33,3 +40,7 @@ Class Documentation
 -------------------
 .. autoclass:: queries.TornadoSession
     :members:
+
+.. autoclass:: queries.tornado_session.Results
+    :members:
+    :inherited-members:

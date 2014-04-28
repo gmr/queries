@@ -8,8 +8,8 @@ from queries import DEFAULT_URI
 
 
 def callproc(name, args=None, uri=DEFAULT_URI):
-    """Call a stored procedure on the server and return an iterator of the
-    result set for easy access to the data.
+    """Call a stored procedure on the server and yield the results as a
+    :py:class:`queries.Result` object.
 
     .. code:: python
 
@@ -19,18 +19,17 @@ def callproc(name, args=None, uri=DEFAULT_URI):
     :param str name: The procedure name
     :param list args: The list of arguments to pass in
     :param str uri: The PostgreSQL connection URI
-    :rtype: iterator
+    :rtype: queries.Results
 
     """
     with Session(uri) as session:
-        for row in session.callproc(name, args):
-            yield row
+        yield session.callproc(name, args)
 
 
 def query(sql, parameters=None, uri=DEFAULT_URI):
     """A generator to issue a query on the server, mogrifying the
-    parameters against the sql statement and returning the results as an
-    iterator.
+    parameters against the sql statement and returning the yield the results
+    as a :py:class:`queries.Result` object.
 
     .. code:: python
 
@@ -41,12 +40,11 @@ def query(sql, parameters=None, uri=DEFAULT_URI):
     :param str sql: The SQL statement
     :param dict parameters: A dictionary of query parameters
     :param str uri: The PostgreSQL connection URI
-    :rtype: iterator
+    :rtype: queries.Results
 
     """
     with Session(uri) as session:
-        for row in session.query(sql, parameters):
-            yield row
+        yield session.query(sql, parameters)
 
 
 def uri(host='localhost', port='5432', dbname='postgres', user='postgres',
