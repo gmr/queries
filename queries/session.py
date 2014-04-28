@@ -139,7 +139,7 @@ class Session(object):
 
     @property
     def connection(self):
-        """Returns the psycopg2 PostgreSQL connection instance
+        """The current open connection to PostgreSQL.
 
         :rtype: psycopg2.extensions.connection
 
@@ -148,7 +148,7 @@ class Session(object):
 
     @property
     def cursor(self):
-        """Returns the cursor instance
+        """The current, active cursor for the open connection.
 
         :rtype: psycopg2.extensions.cursor
 
