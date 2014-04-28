@@ -142,7 +142,7 @@ Tornado_ web application to send a JSON payload with the query result set.
 
         @gen.coroutine
         def get(self):
-            data = yield self.session.query('SELECT * FROM names')
+            rows, data = yield self.session.query('SELECT * FROM names')
             self.finish({'data': data})
 
 
