@@ -33,7 +33,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Let the caller know what methods are supported
 
             :param list args: URI path arguments passed in by Tornado
-            :param list args: URI path keyword arguments passed in by Tornado
+            :param dict kwargs: URI path keyword arguments passed in by Tornado
 
             """
             self.set_header('Allow', ', '.join(['DELETE', 'GET', 'POST', 'PUT']))
@@ -45,7 +45,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Delete a widget from the database
 
             :param list args: URI path arguments passed in by Tornado
-            :param list args: URI path keyword arguments passed in by Tornado
+            :param dict kwargs: URI path keyword arguments passed in by Tornado
 
             """
             # We need a SKU, if it wasn't passed in the URL, return an error
@@ -69,7 +69,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Fetch a widget from the database
 
             :param list args: URI path arguments passed in by Tornado
-            :param list args: URI path keyword arguments passed in by Tornado
+            :param dict kwargs: URI path keyword arguments passed in by Tornado
 
             """
             # We need a SKU, if it wasn't passed in the URL, return an error
@@ -96,7 +96,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Update a widget in the database
 
             :param list args: URI path arguments passed in by Tornado
-            :param list args: URI path keyword arguments passed in by Tornado
+            :param dict kwargs: URI path keyword arguments passed in by Tornado
 
             """
             # We need a SKU, if it wasn't passed in the URL, return an error
@@ -135,7 +135,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Add a widget to the database
 
             :param list args: URI path arguments passed in by Tornado
-            :param list args: URI path keyword arguments passed in by Tornado
+            :param dict kwargs: URI path keyword arguments passed in by Tornado
 
             """
             try:
@@ -166,7 +166,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Let the caller know what methods are supported
 
             :param list args: URI path arguments passed in by Tornado
-            :param list args: URI path keyword arguments passed in by Tornado
+            :param dict kwargs: URI path keyword arguments passed in by Tornado
 
             """
             self.set_header('Allow', ', '.join(['GET']))
@@ -178,7 +178,7 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """Get a list of all the widgets from the database
 
             :param list args: URI path arguments passed in by Tornado
-            :param list args: URI path keyword arguments passed in by Tornado
+            :param dict kwargs: URI path keyword arguments passed in by Tornado
 
             """
             rows, data = yield self.session.query("SELECT * FROM widgets ORDER BY sku")
