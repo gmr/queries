@@ -101,7 +101,7 @@ as a context manager to query the database table:
 
 **Using queries.Session.callproc**
 
-This example uses :py:meth:`queries.Session.callproc` to execute a stored
+This example uses ``queries.Session.callproc`` to execute a stored
 procedure and then pretty-prints the single row results as a dictionary:
 
 .. code:: python
