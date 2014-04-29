@@ -81,7 +81,7 @@ functionality provided by PostgreSQL.
 
 **Using queries.Session.query**
 
-The following example shows how a :py:class:`queries.Session` object can be used
+The following example shows how a ``queries.Session`` object can be used
 as a context manager to query the database table:
 
 .. code:: python
