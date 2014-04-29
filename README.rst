@@ -162,7 +162,7 @@ main GitHub repository of Queries as tags prior to version 1.2.0.
 .. _URI: http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING
 .. _pgsql_wrapper: https://pypi.python.org/pypi/pgsql_wrapper
 .. _Tornado: http://tornadoweb.org
-.. _PEP343:http://legacy.python.org/dev/peps/pep-0343/
+.. _PEP343: http://legacy.python.org/dev/peps/pep-0343/
 
 .. |Version| image:: https://badge.fury.io/py/queries.svg?
    :target: http://badge.fury.io/py/queries
