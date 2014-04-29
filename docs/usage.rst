@@ -48,49 +48,10 @@ Using queries.uri to generate a URI from individual arguments
     >>> queries.uri("server-name", 5432, "dbname", "user", "pass")
     'pgsql://user:pass@server-name:5432/dbname'
 
-
-Using the queries.query method to execute a query
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The :py:meth:`queries.query` method is one of the simple API methods intended
-to provide quick, one-off access to executing queries on a PostgreSQL server.
-It takes advantage of the Queries connection pool to reduce the overhead of
-repeat usage in the same Python interpreter.
-
-The following example uses the :ref:`default URI <connection-uris>` to execute a
-query and iterate over the results:
-
-.. code:: python
-
-    >>> import pprint
-    >>> import queries
-    >>>
-    >>> for row in queries.query('SELECT * FROM names'):
-    ...     pprint.pprint(row)
-    ...
-    {'id': 1, 'name': u'Jacob'}
-    {'id': 2, 'name': u'Mason'}
-    {'id': 3, 'name': u'Ethan'}
-
-Using the queries.callproc method to call a stored procedure
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The :py:meth:`queries.callproc` method is one of the simple API methods intended
-to provide quick, one-off access to calling stored-procedures. Like :py:meth:`queries.query`,
-it takes advantage of the Queries connection pool to reduce the overhead of
-repeat usage in the same Python interpreter.
-
-.. code:: python
-
-    >>> import pprint
-    >>> import queries
-    >>>
-    >>> pprint.pprint(list(queries.callproc('now')))
-    [{'now': datetime.datetime(2014, 4, 27, 15, 7, 18, 832480,
-                               tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-240, name=None))}
-
 Using the queries.Session class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-If your application is going to be performing multiple operations, you should use
-the :py:class:`queries.Session` class. It can act as a context manager, meaning you can
+To execute queries or call stored procedures, you start by creating an instance of the
+:py:class:`queries.Session` class. It can act as a context manager, meaning you can
 use it with the ``with`` keyword and it will take care of cleaning up after itself. For
 more information on the ``with`` keyword and context managers, see :pep:`343`.
 
@@ -103,8 +64,10 @@ managing transactions and to the
 `LISTEN/NOTIFY <http://www.postgresql.org/docs/9.3/static/sql-listen.html>`_
 functionality provided by PostgreSQL.
 
+**Using queries.Session.query**
+
 The following example shows how a :py:class:`queries.Session` object can be used
-as a context manager:
+as a context manager to query the database table:
 
 .. code:: python
 
@@ -118,3 +81,18 @@ as a context manager:
     {'id': 1, 'name': u'Jacob'}
     {'id': 2, 'name': u'Mason'}
     {'id': 3, 'name': u'Ethan'}
+
+**Using queries.Session.callproc**
+
+This example uses :py:meth:`queries.Session.callproc` to execute a stored
+procedure and then pretty-prints the single row results as a dictionary:
+
+.. code:: python
+
+    >>> import pprint
+    >>> import queries
+    >>> with queries.Session() as session:
+    ...   results = session.callproc('chr', [65])
+    ...   pprint.pprint(results.as_dict())
+    ...
+    {'chr': u'A'}

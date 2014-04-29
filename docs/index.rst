@@ -43,7 +43,6 @@ Contents
    :maxdepth: 1
 
    usage
-   simple
    session
    results
    tornado_session

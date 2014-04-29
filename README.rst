@@ -37,21 +37,16 @@ Queries is available via pypi_ and can be installed with easy_install or pip:
 
 Usage
 -----
-Queries provides both a session based API and a stripped-down simple API for
-interacting with PostgreSQL. If you're writing applications that will only have
-one or two queries, the simple API may be useful. Instead of creating a session
-object when using the simple API methods (``queries.query()`` and
-``queries.callproc()``), this is done for you. Simply pass in your query and
-the URIs_ of the PostgreSQL server to connect to:
+Queries provides both a session based API for interacting with PostgreSQL.
+Simply pass in the URI_ of the PostgreSQL server to connect to when creating
+a session:
 
 .. code:: python
 
-    queries.query("SELECT now()", "pgsql://postgres@localhost:5432/postgres")
+    session = queries.Session("pgsql://postgres@localhost:5432/postgres")
 
 Queries built-in connection pooling will re-use connections when possible,
-lowering the overhead of connecting and reconnecting. This is also true when
-you're using Queries sessions in different parts of your application in the same
-Python interpreter.
+lowering the overhead of connecting and reconnecting.
 
 When specifying a URI, if you omit the username and database name to connect
 with, Queries will use the current OS username for both. You can also omit the
@@ -69,44 +64,27 @@ methods.
     >>> queries.uri("server-name", 5432, "dbname", "user", "pass")
     'pgsql://user:pass@server-name:5432/dbname'
 
-Here are a few examples of using the Queries simple API:
 
-1. Executing a query and fetching data using the default URI:
+Using the queries.Session class
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To execute queries or call stored procedures, you start by creating an instance of the
+:py:class:`queries.Session` class. It can act as a context manager, meaning you can
+use it with the ``with`` keyword and it will take care of cleaning up after itself. For
+more information on the ``with`` keyword and context managers, see :pep:`343`.
 
-.. code:: python
+In addition to both the :py:meth:`queries.Session.query` and
+:py:meth:`queries.Session.callproc` methods that
+are similar to the simple API methods, the :py:class:`queries.Session` class provides
+access to the psycopg2 :py:class:`~psycopg2.extensions.connection` and
+:py:class:`~psycopg2.extensions.cursor`  objects.  It also provides methods for
+managing transactions and to the
+`LISTEN/NOTIFY <http://www.postgresql.org/docs/9.3/static/sql-listen.html>`_
+functionality provided by PostgreSQL.
 
-    >>> import pprint
-    >>> import queries
-    >>>
-    >>> for row in queries.query('SELECT * FROM names'):
-    ...     pprint.pprint(row)
-    ...
-    {'id': 1, 'name': u'Jacob'}
-    {'id': 2, 'name': u'Mason'}
-    {'id': 3, 'name': u'Ethan'}
+**Using queries.Session.query**
 
-2. Calling a stored procedure, returning the iterator results as a list:
-
-.. code:: python
-
-    >>> import pprint
-    >>> import queries
-    >>>
-    >>> pprint.pprint(list(queries.callproc('now')))
-    [{'now': datetime.datetime(2014, 4, 27, 15, 7, 18, 832480,
-                               tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-240, name=None))}
-
-If your application is going to be performing multiple operations, you should use
-the ``queries.Session`` class. It can act as a context manager, meaning you can
-use it with the ``with`` keyword and it will take care of cleaning up after itself.
-
-In addition to both the ``Session.query()`` and  ``Session.callproc()`` methods that
-are similar to the simple API methods, the ``queries.Session`` class provides
-access to the psycopg2 connection and cursor objects. It also provides methods
-for managing transactions and to the LISTEN/NOTIFY functionality provided by
-PostgreSQL. For full documentation around the Session class, see the
-documentation_. The following example shows how a ``queries.Session`` object can
-be used as a context manager.
+The following example shows how a :py:class:`queries.Session` object can be used
+as a context manager to query the database table:
 
 .. code:: python
 
@@ -121,8 +99,25 @@ be used as a context manager.
     {'id': 2, 'name': u'Mason'}
     {'id': 3, 'name': u'Ethan'}
 
+**Using queries.Session.callproc**
+
+This example uses :py:meth:`queries.Session.callproc` to execute a stored
+procedure and then pretty-prints the single row results as a dictionary:
+
+.. code:: python
+
+    >>> import pprint
+    >>> import queries
+    >>> with queries.Session() as session:
+    ...   results = session.callproc('chr', [65])
+    ...   pprint.pprint(results.as_dict())
+    ...
+    {'chr': u'A'}
+
+**Asynchronous Queries with Tornado**
+
 In addition to providing a Pythonic, synchronous client API for PostgreSQL,
-Queries provides a very similar asynchronous API for use with Tornado [1]_.
+Queries provides a very similar asynchronous API for use with Tornado.
 The only major difference API difference between ``queries.TornadoSession`` and
 ``queries.Session`` is the ``TornadoSession.query`` and ``TornadoSession.callproc``
 methods return the entire result set instead of acting as an iterator over
@@ -141,9 +136,9 @@ Tornado_ web application to send a JSON payload with the query result set.
 
         @gen.coroutine
         def get(self):
-            rows, data = yield self.session.query('SELECT * FROM names')
-            self.finish({'data': data})
-
+            results = yield self.session.query('SELECT * FROM names')
+            self.finish({'data': data.items()})
+            results.free()
 
     application = web.Application([
         (r"/", MainHandler),
@@ -152,8 +147,6 @@ Tornado_ web application to send a JSON payload with the query result set.
     if __name__ == "__main__":
         application.listen(8888)
         ioloop.IOLoop.instance().start()
-
-.. [1] Simple API methods are not asynchronous and should not be used in an asynchronous Tornado application.
 
 Inspiration
 -----------
@@ -168,7 +161,7 @@ main GitHub repository of Queries as tags prior to version 1.2.0.
 .. _pypi: https://pypi.python.org/pypi/queries
 .. _psycopg2: https://pypi.python.org/pypi/psycopg2
 .. _documentation: https://queries.readthedocs.org
-.. _URIs: http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING
+.. _URI: http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING
 .. _pgsql_wrapper: https://pypi.python.org/pypi/pgsql_wrapper
 .. _Tornado: http://tornadoweb.org
 

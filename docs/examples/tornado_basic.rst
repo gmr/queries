@@ -64,7 +64,8 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
                     self.set_status(204)  # Success, but no data returned
                     self.finish()
 
-                results.release()
+                # Free the results and release the connection lock from session.query
+                results.free()
 
         @gen.coroutine
         def get(self, *args, **kwargs):
@@ -93,7 +94,8 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
                 else:
                     self.finish(results.as_dict())
 
-                results.release()
+                # Free the results and release the connection lock from session.query
+                results.free()
 
         @gen.coroutine
         def post(self, *args, **kwargs):
@@ -117,7 +119,9 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
                                                        {'sku': kwargs['sku'],
                                                         'name': self.get_argument('name'),
                                                         'qty': self.get_argument('qty')})
-                    results.release()
+
+                    # Free the results and release the connection lock from session.query
+                    results.free()
 
                 # DataError is raised when there's a problem with the data passed in
                 except queries.DataError as error:
@@ -148,7 +152,9 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
                                                    [self.get_argument('sku'),
                                                     self.get_argument('name'),
                                                     self.get_argument('qty')])
-                results.release()
+
+                # Free the results and release the connection lock from session.query
+                results.free()
             except (queries.DataError,
                     queries.IntegrityError) as error:
                 self.set_status(409)
@@ -191,7 +197,9 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
 
             # Tornado doesn't allow you to return a list as a JSON result by default
             self.finish({'widgets': results.items()})
-            results.release()
+
+            # Free the results and release the connection lock from session.query
+            results.free()
 
 
     if __name__ == "__main__":
