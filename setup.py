@@ -1,4 +1,5 @@
 from setuptools import setup
+import os
 import platform
 
 # Make the install_requires
@@ -22,7 +23,7 @@ setup(name='queries',
       extras_require={'tornado': 'tornado'},
       license=open('LICENSE').read(),
       package_data={'': ['LICENSE', 'README.md']},
-      py_modules=['pgsql_wrapper'],
+      packages=['queries'],
       classifiers=['Development Status :: 5 - Production/Stable',
                    'Intended Audience :: Developers',
                    'License :: OSI Approved :: BSD License',
