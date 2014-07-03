@@ -1,5 +1,5 @@
 """
-Tests for functionality in the pool module
+Tests for functionality in the tornado_session module
 
 """
 import mock
@@ -8,6 +8,5 @@ try:
 except ImportError:
     import unittest
 
-from queries import pool
-
+from queries import tornado_session
 

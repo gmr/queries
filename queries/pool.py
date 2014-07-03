@@ -1,7 +1,6 @@
 """
 Connection Pooling
 
-
 """
 import logging
 import threading
