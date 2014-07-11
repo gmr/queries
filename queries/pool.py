@@ -389,7 +389,7 @@ class PoolManager(object):
 
     @classmethod
     def get(cls, pid, session):
-        """Get an idle, unsued connection from the pool. Once a connection has
+        """Get an idle, unused connection from the pool. Once a connection has
         been retrieved, it will be marked as in-use until it is freed.
 
         :param str pid: The pool ID

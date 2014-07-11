@@ -9,7 +9,6 @@ try:
 except ImportError:
     import unittest
 import uuid
-import weakref
 
 from queries import pool
 
