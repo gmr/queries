@@ -10,7 +10,7 @@ python:
 
 install:
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then  pip install -r requirements.txt; pip install psycopg2 unittest2; fi
-    - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install -r requirements.txt; pip install psycopg2; fi
+    - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install -r requirements.txt; pip install psycopg2; fi
     - if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install -r requirements.txt; pip install psycopg2ct; fi
     - if [[ $TRAVIS_PYTHON_VERSION == '3.2' ]]; then pip install -r requirements.txt; pip install psycopg2; fi
     - if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then pip install -r requirements.txt; pip install psycopg2; fi
