@@ -9,11 +9,13 @@ python:
     - 3.4
 
 install:
-    - if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install psycopg2ct tornado; fi
-    - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install psycopg2 unittest2 tornado; fi
-    - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install psycopg2 tornado; fi
-    - if [[ $TRAVIS_PYTHON_VERSION == '3.2' ]]; then pip install psycopg2 tornado; fi
-    - if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then pip install psycopg2 tornado; fi
-    - if [[ $TRAVIS_PYTHON_VERSION == '3.4' ]]; then pip install psycopg2 tornado; fi
+    - if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install -r requirements.txt; fi
+    - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install psycopg2 unittest2 tornado python-coveralls; fi
+    - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install -r requirements.txt; fi
+    - if [[ $TRAVIS_PYTHON_VERSION == '3.2' ]]; then pip install -r requirements.txt; fi
+    - if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then pip install -r requirements.txt; fi
+    - if [[ $TRAVIS_PYTHON_VERSION == '3.4' ]]; then pip install -r requirements.txt; fi
 
-script: nosetests
+script: nosetests --with-coverage --cover-package=queries
+after_success:
+  - coveralls
