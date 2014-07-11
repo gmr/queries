@@ -99,7 +99,6 @@ class Pool(object):
     """A connection pool for gaining access to and managing connections"""
     _lock = threading.Lock()
 
-    connections = dict()
     idle_start = None
     idle_ttl = DEFAULT_IDLE_TTL
     max_size = DEFAULT_MAX_SIZE
@@ -108,6 +107,7 @@ class Pool(object):
                  pool_id,
                  idle_ttl=DEFAULT_IDLE_TTL,
                  max_size=DEFAULT_MAX_SIZE):
+        self.connections = dict()
         self._id = pool_id
         self.idle_ttl = idle_ttl
         self.max_size = max_size
@@ -143,7 +143,7 @@ class Pool(object):
 
         """
         for connection in [self.connections[k] for k in self.connections if
-                           self.connections[k].handle.closed]:
+                           self.connections[k].closed]:
             self.remove(connection.handle)
 
         if self.idle_duration > self.idle_ttl:
@@ -153,7 +153,7 @@ class Pool(object):
 
     def close(self):
         """Close the pool by closing and removing all of the connections"""
-        for cid in [self.connections.keys()]:
+        for cid in self.connections:
             self.remove(self.connections[cid].handle)
         LOGGER.debug('Pool %s closed', self.id)
 
@@ -170,10 +170,9 @@ class Pool(object):
         except KeyError:
             raise ConnectionNotFoundError(self.id, id(connection))
 
-        if not self.idle_connections:
+        if self.idle_connections == self.connections.values():
             with self._lock:
                 self.idle_start = time.time()
-
         LOGGER.debug('Pool %s freed connection %s', self.id, id(connection))
 
     def get(self, session):
@@ -258,17 +257,18 @@ class Pool(object):
         """Remove the connection from the pool
 
         :param connection: The connection to remove
-        :type connection:  psycopg2.extensions.connection
+        :type connection: psycopg2.extensions.connection
         :raises: ConnectionNotFoundError
         :raises: ConnectionBusyError
 
         """
         cid = id(connection)
-        try:
-            c = self._connection(connection)
-        except KeyError:
+        if cid not in self:
             raise ConnectionNotFoundError(self.id, cid)
-        c.close()
+        conn = self._connection(connection)
+        if conn.busy:
+            raise ConnectionBusyError(cid)
+        conn.close()
         with self._lock:
             del self.connections[cid]
         LOGGER.debug('Pool %s removed connection %s', self.id, cid)
@@ -562,8 +562,8 @@ class ActivePoolError(Exception):
 class ConnectionBusyError(Exception):
     """Raised when trying to lock a connection that is already busy"""
 
-    def __init__(self, connection):
-        self.cid = connection.id
+    def __init__(self, cid):
+        self.cid = cid
 
     def __str__(self):
         return 'Connection %s is busy' % self.cid
@@ -572,9 +572,9 @@ class ConnectionBusyError(Exception):
 class ConnectionNotFoundError(Exception):
     """Raised if a specific connection is not found in the pool"""
 
-    def __init__(self, pid, connection):
+    def __init__(self, pid, cid):
         self.pid = pid
-        self.cid = connection
+        self.cid = cid
 
     def __str__(self):
         return 'Connection %s not found in pool %s' % (self.cid, self.pid)
