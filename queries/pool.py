@@ -263,7 +263,7 @@ class Pool(object):
 
         """
         cid = id(connection)
-        if cid not in self:
+        if cid not in self.connections:
             raise ConnectionNotFoundError(self.id, cid)
         conn = self._connection(connection)
         if conn.busy:
