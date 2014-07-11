@@ -170,7 +170,7 @@ class Pool(object):
         except KeyError:
             raise ConnectionNotFoundError(self.id, id(connection))
 
-        if self.idle_connections == self.connections.values():
+        if self.idle_connections == list(self.connections.values()):
             with self._lock:
                 self.idle_start = time.time()
         LOGGER.debug('Pool %s freed connection %s', self.id, id(connection))
