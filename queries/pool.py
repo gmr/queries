@@ -265,10 +265,7 @@ class Pool(object):
         cid = id(connection)
         if cid not in self.connections:
             raise ConnectionNotFoundError(self.id, cid)
-        conn = self._connection(connection)
-        if conn.busy:
-            raise ConnectionBusyError(cid)
-        conn.close()
+        self._connection(connection).close()
         with self._lock:
             del self.connections[cid]
         LOGGER.debug('Pool %s removed connection %s', self.id, cid)
