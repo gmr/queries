@@ -1,4 +1,5 @@
 nose
 mock
+coverage
 tornado
 python-coveralls
