@@ -9,3 +9,4 @@ except ImportError:
     import unittest
 
 from queries import session
+

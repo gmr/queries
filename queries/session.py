@@ -50,7 +50,8 @@ class Session(object):
 
     :param str uri: PostgreSQL connection URI
     :param psycopg2.extensions.cursor: The cursor type to use
-    :param bool use_pool: Use the connection pool
+    :param int pool_idle_ttl: How long idle pools keep connections open
+    :param int pool_max_size: The maximum size of the pool to use
 
     """
     _conn = None
