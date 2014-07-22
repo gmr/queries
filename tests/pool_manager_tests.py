@@ -35,3 +35,13 @@ class ManagerTests(unittest.TestCase):
         psycopg2_conn = mock.Mock()
         self.manager.add(pid, psycopg2_conn)
         self.assertIn(psycopg2_conn, self.manager._pools[pid])
+
+    def test_adding_to_pool_ensures_pool_exists(self):
+        pid = str(uuid.uuid4())
+        psycopg2_conn = mock.Mock()
+        self.assertRaises(KeyError, self.manager.add, pid, psycopg2_conn)
+
+    def test_clean_ensures_pool_exists(self):
+        pid = str(uuid.uuid4())
+        psycopg2_conn = mock.Mock()
+        self.assertRaises(KeyError, self.manager.clean, pid)
