@@ -129,3 +129,14 @@ class SessionTests(unittest.TestCase):
         self.conn.set_client_encoding = set_client_encoding = mock.Mock()
         self.obj.set_encoding('UTF-8')
         self.assertFalse(set_client_encoding.called)
+
+    def test_del_invokes_cleanup(self):
+        cleanup = mock.Mock()
+        with mock.patch.multiple('queries.session.Session',
+                                 _cleanup=cleanup,
+                                 _connect=mock.Mock(),
+                                 _get_cursor=mock.Mock(),
+                                 _autocommit=mock.Mock()):
+            obj = session.Session(self.URI)
+            del obj
+            cleanup.assert_called_once_with()
