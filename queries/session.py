@@ -85,7 +85,7 @@ class Session(object):
         :param int pool_max_size: The maximum size of the pool to use
 
         """
-        self._pool_manager = pool.PoolManager()
+        self._pool_manager = pool.PoolManager.instance()
         self._uri = uri
 
         # Ensure the pool exists in the pool manager
@@ -254,10 +254,16 @@ class Session(object):
             self._cursor = None
 
         if self._conn:
-            self._pool_manager.free(self.pid, self._conn)
+            try:
+                self._pool_manager.free(self.pid, self._conn)
+            except (pool.ConnectionNotFoundError, KeyError):
+                pass
             self._conn = None
 
-        self._pool_manager.clean(self.pid)
+        try:
+            self._pool_manager.clean(self.pid)
+        except KeyError:
+            pass
 
     def _connect(self):
         """Connect to PostgreSQL, either by reusing a connection from the pool
