@@ -100,7 +100,6 @@ class PoolTests(unittest.TestCase):
         obj.close.assert_called_once_with()
 
     def test_close_close_removes_all(self):
-
         obj = pool.Pool(str(uuid.uuid4()))
         obj.remove = mock.Mock()
         psycopg2_conns = [mock.Mock(), mock.Mock()]
@@ -169,6 +168,7 @@ class PoolTests(unittest.TestCase):
         with mock.patch.multiple('queries.pool.Connection',
                                  busy=False, closed=False):
             session = mock.Mock()
+            obj.idle_start = time.time()
             obj.get(session)
             self.assertIsNone(obj.idle_start)
 
