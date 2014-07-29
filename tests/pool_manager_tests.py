@@ -14,7 +14,6 @@ from queries import pool
 
 class ManagerTests(unittest.TestCase):
 
-
     def setUp(self):
         self.manager = pool.PoolManager.instance()
 
