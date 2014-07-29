@@ -72,6 +72,8 @@ def uri(host='localhost', port='5432', dbname='postgres', user='postgres',
 from psycopg2.extras import DictCursor
 from psycopg2.extras import NamedTupleCursor
 from psycopg2.extras import RealDictCursor
+from psycopg2.extras import LoggingCursor
+from psycopg2.extras import MinTimeLoggingCursor
 
 # Expose exceptions so clients do not need to import psycopg2 too
 from psycopg2 import DataError
