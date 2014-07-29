@@ -15,11 +15,11 @@ class Results(object):
     as an iterator and provides many different methods for accessing the
     information about and results from a query.
 
+    :param psycopg2.extensions.cursor cursor: The cursor for the results
+
     """
-    def __init__(self, cursor, cleanup=None, fd=None):
+    def __init__(self, cursor):
         self.cursor = cursor
-        self._cleanup = cleanup
-        self._fd = fd
 
     def __getitem__(self, item):
         """Fetch an individual row from the result set
@@ -68,7 +68,7 @@ class Results(object):
 
         """
         if not self.cursor.rowcount:
-            return 0
+            return {}
 
         self._rewind()
         if self.cursor.rowcount == 1:
@@ -89,7 +89,7 @@ class Results(object):
         connections.
 
         """
-        LOGGER.warning("Released results in queries.Session")
+        raise NotImplementedError
 
     def items(self):
         """Return all of the rows that are in the result set.
