@@ -93,7 +93,6 @@ class Session(object):
             self._pool_manager.create(self.pid, pool_idle_ttl, pool_max_size)
 
         self._conn = self._connect()
-
         self._cursor_factory = cursor_factory
         self._cursor = self._get_cursor(self._conn)
         self._autocommit()
@@ -140,7 +139,7 @@ class Session(object):
 
         self._pool_manager.remove_connection(self.pid, self._conn)
 
-        # Close the connection
+        # Un-assign the connection and cursor
         self._conn, self._cursor = None, None
 
     @property
