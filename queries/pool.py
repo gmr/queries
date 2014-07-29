@@ -596,4 +596,3 @@ class PoolFullError(Exception):
 
     def __str__(self):
         return 'Pool %s is at its maximum capacity' % self.pid
-
