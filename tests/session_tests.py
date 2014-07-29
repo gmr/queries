@@ -16,6 +16,8 @@ from queries import pool
 from queries import results
 from queries import session
 
+from queries import PYPY
+
 
 class SessionTests(unittest.TestCase):
 
@@ -130,6 +132,7 @@ class SessionTests(unittest.TestCase):
         self.obj.set_encoding('UTF-8')
         self.assertFalse(set_client_encoding.called)
 
+    @unittest.skipIf(PYPY, 'PYPY does not invoke object.__del__ synchronously')
     def test_del_invokes_cleanup(self):
         cleanup = mock.Mock()
         with mock.patch.multiple('queries.session.Session',
@@ -140,3 +143,45 @@ class SessionTests(unittest.TestCase):
             obj = session.Session(self.URI)
             del obj
             cleanup.assert_called_once_with()
+
+    def test_exit_invokes_cleanup(self):
+        cleanup = mock.Mock()
+        with mock.patch.multiple('queries.session.Session',
+                                 _cleanup=cleanup,
+                                 _connect=mock.Mock(),
+                                 _get_cursor=mock.Mock(),
+                                 _autocommit=mock.Mock()):
+            with session.Session(self.URI) as sess:
+                pass
+            cleanup.assert_called_once_with()
+
+    def test_autocommit_sets_attribute(self):
+        self.conn.autocommit = False
+        self.obj._autocommit()
+        self.assertTrue(self.conn.autocommit)
+
+    def test_cleanup_closes_cursor(self):
+        self.cursor.close = closeit = mock.Mock()
+        self.conn = None
+        self.obj._cleanup()
+        closeit.assert_called_once_with()
+
+    def test_cleanup_sets_cursor_to_none(self):
+        self.cursor.close = mock.Mock()
+        self.conn = None
+        self.obj._cleanup()
+        self.assertIsNone(self.obj._cursor)
+
+    def test_cleanup_frees_connection(self):
+        pool.PoolManager.free = free = mock.Mock()
+        self.obj._cleanup()
+        free.assert_called_once_with(self.obj.pid, self.conn)
+
+    def test_cleanup_sets_connecto_to_none(self):
+        self.obj._cleanup()
+        self.assertIsNone(self.obj._conn)
+
+    def test_cleanup_cleans_pool_manager(self):
+        pool.PoolManager.clean = clean = mock.Mock()
+        self.obj._cleanup()
+        clean.assert_called_once_with(self.obj.pid)
