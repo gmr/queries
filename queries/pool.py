@@ -377,6 +377,7 @@ class PoolManager(object):
 
         :param str pid: The pool ID
         :param int idle_ttl: Time in seconds for the idle TTL
+        :param int max_size: The maximum pool size
         :param class pool_type: The pool type to create
         :raises: KeyError
 
@@ -415,17 +416,6 @@ class PoolManager(object):
             return cls._pools[pid].free(connection)
 
     @classmethod
-    def is_full(cls, pid):
-        """Return a bool indicating if the specified pool is full
-
-        :param str pid: The pool id
-        :rtype: bool
-
-        """
-        cls._ensure_pool_exists(pid)
-        return cls._pools[pid].is_full
-
-    @classmethod
     def has_connection(cls, pid, connection):
         """Check to see if a pool has the specified connection
 
@@ -448,6 +438,17 @@ class PoolManager(object):
         """
         cls._ensure_pool_exists(pid)
         return bool(cls._pools[pid].idle_connections)
+
+    @classmethod
+    def is_full(cls, pid):
+        """Return a bool indicating if the specified pool is full
+
+        :param str pid: The pool id
+        :rtype: bool
+
+        """
+        cls._ensure_pool_exists(pid)
+        return cls._pools[pid].is_full
 
     @classmethod
     def lock(cls, pid, connection, session):
