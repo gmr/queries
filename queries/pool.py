@@ -20,11 +20,9 @@ class Connection(object):
     """
     _lock = threading.Lock()
 
-    handle = None
-    used_by = None
-
     def __init__(self, handle):
         self.handle = handle
+        self.used_by = None
 
     def close(self):
         """Close the connection
@@ -55,9 +53,11 @@ class Connection(object):
         :rtype: bool
 
         """
-        return (self.handle.isexecuting() or
-                (not self.used_by is None or
-                 (self.used_by and self.used_by() is not None)))
+        if self.handle.isexecuting():
+            return True
+        elif self.used_by is None:
+            return False
+        return not self.used_by() is None
 
     def free(self):
         """Remove the lock on the connection if the connection is not active
@@ -65,6 +65,7 @@ class Connection(object):
         :raises: ConnectionBusyError
 
         """
+        LOGGER.debug('Connection %s freeing', self.id)
         if self.handle.isexecuting():
             raise ConnectionBusyError(self)
         with self._lock:
@@ -142,8 +143,10 @@ class Pool(object):
         idle has exceeded its idle TTL, remove all connections.
 
         """
+        LOGGER.debug('Cleaning the pool')
         for connection in [self.connections[k] for k in self.connections if
                            self.connections[k].closed]:
+            LOGGER.debug('Removing %s', connection.id)
             self.remove(connection.handle)
 
         if self.idle_duration > self.idle_ttl:
@@ -165,6 +168,7 @@ class Pool(object):
         :raises: ConnectionNotFoundError
 
         """
+        LOGGER.debug('Pool %s freeing connection %s', self.id, id(connection))
         try:
             self._connection(connection).free()
         except KeyError:
@@ -411,9 +415,10 @@ class PoolManager(object):
         :type connection: psycopg2.extensions.connection
 
         """
+        LOGGER.debug('Freeing %s from pool %s', id(connection), pid)
         cls._ensure_pool_exists(pid)
         with cls._lock:
-            return cls._pools[pid].free(connection)
+            cls._pools[pid].free(connection)
 
     @classmethod
     def has_connection(cls, pid, connection):
