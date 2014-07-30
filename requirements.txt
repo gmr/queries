@@ -1,5 +1,6 @@
-nose
-mock
 coverage
-tornado
+mock
+nose
+psycopg2
 python-coveralls
+tornado
