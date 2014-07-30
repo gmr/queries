@@ -10,9 +10,10 @@ python:
 
 install:
     - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
-    - if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then pip install -r requirements.txt; pip install psycopg2; fi
-    - if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install -r requirements.txt; pip install psycopg2ct; fi
+    - if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then pip install -r requirements.pip; fi
+    - if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install -r requirements.pypy; fi
 
 script: nosetests --with-coverage --cover-package=queries
+
 after_success:
   - coveralls

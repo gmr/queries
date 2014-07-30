@@ -1,5 +1,6 @@
 coverage
 mock
 nose
+psycopg2
 python-coveralls
 tornado

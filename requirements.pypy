@@ -1,0 +1,6 @@
+coverage
+mock
+nose
+psycopg2ct
+python-coveralls
+tornado
