@@ -34,4 +34,3 @@ class URICreationTests(unittest.TestCase):
     def test_default_uri(self):
         expectation = 'pgsql://postgres@localhost:5432/postgres'
         self.assertEqual(queries.uri(), expectation)
-
