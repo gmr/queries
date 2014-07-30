@@ -13,7 +13,7 @@ install:
     - if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then pip install -r requirements.pip; fi
     - if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install -r requirements.pypy; fi
 
-script: nosetests --with-coverage --cover-package=queries
+script: nosetests --with-coverage --cover-package=queries --verbose
 
 after_success:
   - coveralls
