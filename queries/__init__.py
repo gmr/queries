@@ -51,7 +51,7 @@ except ImportError:
     TornadoSession = None
 
 
-def uri(host='localhost', port='5432', dbname='postgres', user='postgres',
+def uri(host='localhost', port=5432, dbname='postgres', user='postgres',
         password=None):
     """Return a PostgreSQL connection URI for the specified values.
 
