@@ -137,6 +137,7 @@ class Session(object):
         if not self._conn:
             raise psycopg2.InterfaceError('Connection not open')
 
+        self._pool_manager.free(self.pid, self._conn)
         self._pool_manager.remove_connection(self.pid, self._conn)
 
         # Un-assign the connection and cursor
@@ -255,14 +256,11 @@ class Session(object):
         if self._conn:
             try:
                 self._pool_manager.free(self.pid, self._conn)
-            except (pool.ConnectionNotFoundError, KeyError):
+            except pool.ConnectionNotFoundError:
                 pass
             self._conn = None
 
-        try:
-            self._pool_manager.clean(self.pid)
-        except KeyError:
-            pass
+        self._pool_manager.clean(self.pid)
 
     def _connect(self):
         """Connect to PostgreSQL, either by reusing a connection from the pool
