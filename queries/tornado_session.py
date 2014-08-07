@@ -421,7 +421,6 @@ class TornadoSession(session.Session):
         # Return the future for the query result
         return future
 
-    @gen.engine
     def _exec_cleanup(self, cursor, fd):
         """Close the cursor, remove any references to the fd in internal state
         and remove the fd from the ioloop.
@@ -439,7 +438,6 @@ class TornadoSession(session.Session):
             del self._futures[fd]
 
         self._ioloop.remove_handler(fd)
-        raise gen.Return()
 
     @gen.coroutine
     def _on_io_events(self, fd=None, events=None):
