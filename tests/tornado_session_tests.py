@@ -74,37 +74,61 @@ class SessionInitTests(unittest.TestCase):
     def test_creates_pool_in_manager(self):
         self.assertIn(self.obj.pid, self.obj._pool_manager._pools)
 
+    def test_connection_is_none(self):
+        self.assertIsNone(self.obj.connection)
 
-class SessionTests(testing.AsyncTestCase):
+    def test_cursor_is_none(self):
+        self.assertIsNone(self.obj.cursor)
 
-    @mock.patch('psycopg2.connect')
-    @mock.patch('psycopg2.extensions.register_type')
-    @mock.patch('psycopg2.extras.register_uuid')
-    @mock.patch('queries.utils.uri_to_kwargs')
-    def setUp(self, uri_to_kwargs, register_uuid, register_type, connect):
 
-        super(SessionTests, self).setUp()
+class SessionConnectTests(testing.AsyncTestCase):
 
+    def setUp(self):
+        super(SessionConnectTests, self).setUp()
         self.conn = mock.Mock()
-        self.conn.autocommit = False
-        self.conn.closed = False
-        self.conn.cursor = mock.Mock()
+        self.conn.fileno = mock.Mock(return_value=10)
+        self.obj = tornado_session.TornadoSession(io_loop=self.io_loop)
 
-        self.conn.fileno = mock.Mock(return_value=True)
-        self.conn.isexecuting = mock.Mock(return_value=False)
-        self.conn.reset = mock.Mock()
-        self.conn.status = psycopg2.extensions.STATUS_BEGIN
+        def create_connection(future):
+            future.set_result(self.conn)
 
-        self.psycopg2_connect = connect
-        self.psycopg2_register_type = register_type
-        self.psycopg2_register_uuid = register_uuid
+        self.obj._create_connection = create_connection
 
-        self.uri_to_kwargs = uri_to_kwargs
-        self.uri_to_kwargs.return_value = {'host': 'localhost',
-                                           'port': 5432,
-                                           'user': 'foo',
-                                           'password': 'bar',
-                                           'dbname': 'foo'}
+    @testing.gen_test
+    def test_connect_returns_new_connection(self):
+        conn = yield self.obj._connect()
+        self.assertEqual(conn, self.conn)
+
+    @testing.gen_test
+    def test_connect_returns_pooled_connection(self):
+        conn = yield self.obj._connect()
+        self.obj._pool_manager.add(self.obj.pid, conn)
+        second_result = yield self.obj._connect()
+        self.assertEqual(second_result, conn)
+
+    @testing.gen_test
+    def test_connect_gets_pooled_connection(self):
+        conn = yield self.obj._connect()
+        self.obj._pool_manager.add(self.obj.pid, conn)
+        with mock.patch.object(self.obj._pool_manager, 'get') as get:
+            with mock.patch.object(self.io_loop, 'add_handler') as add_handler:
+                second_result = yield self.obj._connect()
+                get.assert_called_once_with(self.obj.pid, self.obj)
+
+    @testing.gen_test
+    def test_connect_pooled_connection_invokes_add_handler(self):
+        conn = yield self.obj._connect()
+        self.obj._pool_manager.add(self.obj.pid, conn)
+        with mock.patch.object(self.obj._pool_manager, 'get') as get:
+            get.return_value = self.conn
+            with mock.patch.object(self.io_loop, 'add_handler') as add_handler:
+                second_result = yield self.obj._connect()
+                add_handler.assert_called_once_with(self.conn.fileno(),
+                                                    self.obj._on_io_events,
+                                                    ioloop.IOLoop.WRITE)
+
+
+class SessionPublicMethodTests(testing.AsyncTestCase):
 
     @testing.gen_test
     def test_callproc_invokes_execute(self):
@@ -127,7 +151,3 @@ class SessionTests(testing.AsyncTestCase):
             obj = tornado_session.TornadoSession(io_loop=self.io_loop)
             result = yield obj.query('SELECT 1')
             _execute.assert_called_once_with('execute', 'SELECT 1', None)
-
-
-
-
