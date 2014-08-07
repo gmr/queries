@@ -10,7 +10,7 @@ import weakref
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_IDLE_TTL = 60
-DEFAULT_MAX_SIZE = 100
+DEFAULT_MAX_SIZE = 1
 
 
 class Connection(object):
@@ -390,6 +390,7 @@ class PoolManager(object):
             raise KeyError('Pool %s already exists' % pid)
         pool_class = pool_type or Pool
         with cls._lock:
+            LOGGER.debug("Creating Pool: %s (%i/%i)", pid, idle_ttl, max_size)
             cls._pools[pid] = pool_class(pid, idle_ttl, max_size)
 
     @classmethod
