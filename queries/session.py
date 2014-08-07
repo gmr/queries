@@ -255,12 +255,10 @@ class Session(object):
 
         if self._conn:
             try:
-                self._pool_manager.free(self.pid, self._conn)
+                pool.PoolManager.instance().free(self.pid, self._conn)
             except pool.ConnectionNotFoundError:
                 pass
             self._conn = None
-
-        self._pool_manager.clean(self.pid)
 
     def _connect(self):
         """Connect to PostgreSQL, either by reusing a connection from the pool
@@ -273,12 +271,14 @@ class Session(object):
         # Attempt to get a cached connection from the connection pool
         try:
             connection = self._pool_manager.get(self.pid, self)
+            LOGGER.debug("Re-using connection for %s", self.pid)
         except pool.NoIdleConnectionsError:
             if self._pool_manager.is_full(self.pid):
                 raise
 
             # Create a new PostgreSQL connection
             kwargs = utils.uri_to_kwargs(self._uri)
+            LOGGER.debug("Creating a new connection for %s", self.pid)
             connection = self._psycopg2_connect(kwargs)
 
             self._pool_manager.add(self.pid, connection)
