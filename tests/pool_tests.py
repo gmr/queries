@@ -13,6 +13,9 @@ import uuid
 from queries import pool
 
 
+MAX_POOL_SIZE = 100
+
+
 class PoolTests(unittest.TestCase):
 
     def test_id_is_set(self):
@@ -100,7 +103,7 @@ class PoolTests(unittest.TestCase):
         obj.close.assert_called_once_with()
 
     def test_close_close_removes_all(self):
-        obj = pool.Pool(str(uuid.uuid4()))
+        obj = pool.Pool(str(uuid.uuid4()), max_size=100)
         obj.remove = mock.Mock()
         psycopg2_conns = [mock.Mock(), mock.Mock()]
         [obj.add(conn) for conn in psycopg2_conns]
@@ -126,7 +129,7 @@ class PoolTests(unittest.TestCase):
         conn.free.assert_called_once_with()
 
     def test_free_resets_idle_start(self):
-        obj = pool.Pool(str(uuid.uuid4()))
+        obj = pool.Pool(str(uuid.uuid4()), max_size=100)
         psycopg2_conns = [mock.Mock(), mock.Mock()]
         with mock.patch.multiple('queries.pool.Connection',
                                  busy=False, closed=False):
@@ -142,7 +145,7 @@ class PoolTests(unittest.TestCase):
         self.assertRaises(pool.ConnectionNotFoundError, obj.free, mock.Mock())
 
     def test_get_returns_first_psycopg2_conn(self):
-        obj = pool.Pool(str(uuid.uuid4()))
+        obj = pool.Pool(str(uuid.uuid4()), max_size=100)
         with mock.patch.multiple('queries.pool.Connection',
                                  busy=False, closed=False):
             psycopg2_conns = [mock.Mock(), mock.Mock()]
@@ -151,7 +154,7 @@ class PoolTests(unittest.TestCase):
             self.assertEqual(obj.get(session), psycopg2_conns[0])
 
     def test_get_locks_first_psycopg2_conn(self):
-        obj = pool.Pool(str(uuid.uuid4()))
+        obj = pool.Pool(str(uuid.uuid4()), max_size=100)
         psycopg2_conns = [mock.Mock(), mock.Mock()]
         [obj.add(conn) for conn in psycopg2_conns]
         lock = mock.Mock()
@@ -162,7 +165,7 @@ class PoolTests(unittest.TestCase):
             lock.assert_called_once_with(session)
 
     def test_get_resets_idle_start_to_none(self):
-        obj = pool.Pool(str(uuid.uuid4()))
+        obj = pool.Pool(str(uuid.uuid4()), max_size=100)
         psycopg2_conns = [mock.Mock(), mock.Mock()]
         [obj.add(conn) for conn in psycopg2_conns]
         with mock.patch.multiple('queries.pool.Connection',
@@ -173,14 +176,14 @@ class PoolTests(unittest.TestCase):
             self.assertIsNone(obj.idle_start)
 
     def test_get_raises_when_no_idle_connections(self):
-        obj = pool.Pool(str(uuid.uuid4()))
+        obj = pool.Pool(str(uuid.uuid4()), max_size=100)
         psycopg2_conns = [mock.Mock(), mock.Mock()]
         [obj.add(conn) for conn in psycopg2_conns]
         session = mock.Mock()
         self.assertRaises(pool.NoIdleConnectionsError, obj.get, session)
 
     def test_idle_connections(self):
-        obj = pool.Pool(str(uuid.uuid4()))
+        obj = pool.Pool(str(uuid.uuid4()), max_size=100)
         psycopg2_conns = [mock.Mock(), mock.Mock()]
         [obj.add(conn) for conn in psycopg2_conns]
         with mock.patch.multiple('queries.pool.Connection',

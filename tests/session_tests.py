@@ -47,7 +47,7 @@ class SessionTestCase(unittest.TestCase):
                                            'password': 'bar',
                                            'dbname': 'foo'}
 
-        self.obj = session.Session(self.URI)
+        self.obj = session.Session(self.URI, pool_max_size=100)
 
     def test_init_sets_uri(self):
         self.assertEqual(self.obj._uri, self.URI)
@@ -189,11 +189,6 @@ class SessionTestCase(unittest.TestCase):
     def test_cleanup_sets_connect_to_none(self):
         self.obj._cleanup()
         self.assertIsNone(self.obj._conn)
-
-    def test_cleanup_cleans_pool_manager(self):
-        pool.PoolManager.clean = clean = mock.Mock()
-        self.obj._cleanup()
-        clean.assert_called_once_with(self.obj.pid)
 
     def test_connect_invokes_pool_manager_get(self):
         with mock.patch.object(self.obj._pool_manager, 'get') as get:
