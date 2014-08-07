@@ -30,9 +30,9 @@ JSON document containing the query results.
 
         @gen.coroutine
         def get(self):
-            results = yield self.session.query('SELECT * FROM names')
-            self.finish({'data': data.items()})
-            results.free()
+            result = yield self.session.query('SELECT * FROM names')
+            self.finish({'data': result.items()})
+            result.free()
 
 See the :doc:`examples/index` for more :py:meth:`~queries.TornadoSession` examples.
 

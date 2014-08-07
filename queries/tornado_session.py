@@ -7,22 +7,27 @@ Example Use:
 
 .. code:: python
 
-    class ExampleHandler(web.RequestHandler):
+    class NameListHandler(web.RequestHandler):
 
         def initialize(self):
-            self.session = queries.TornadoSession()
+            self.session = queries.TornadoSession(pool_max_size=60)
 
         @gen.coroutine
         def get(self):
-            results = yield self.session.query('SELECT * FROM names')
-            self.finish({'data': results.items()})
-            results.free()
+            data = yield self.session.query('SELECT * FROM names')
+            if data:
+                self.finish({'names': data.items()})
+                data.free()
+            else:
+                self.set_status(500, 'Error querying the data')
 
 """
 import logging
 
 from psycopg2 import extensions
 from psycopg2 import extras
+
+from tornado import concurrent
 from tornado import gen
 from tornado import ioloop
 from tornado import stack_context
@@ -36,6 +41,8 @@ from queries import DEFAULT_URI
 from queries import PYPY
 
 LOGGER = logging.getLogger(__name__)
+
+DEFAULT_MAX_POOL_SIZE = 25
 
 
 class Results(results.Results):
@@ -134,7 +141,8 @@ class TornadoSession(session.Session):
     def __init__(self, uri=DEFAULT_URI,
                  cursor_factory=extras.RealDictCursor,
                  pool_idle_ttl=pool.DEFAULT_IDLE_TTL,
-                 pool_max_size=pool.DEFAULT_MAX_SIZE):
+                 pool_max_size=DEFAULT_MAX_POOL_SIZE,
+                 io_loop=None):
         """Connect to a PostgreSQL server using the module wide connection and
         set the isolation level.
 
@@ -142,15 +150,15 @@ class TornadoSession(session.Session):
         :param psycopg2.extensions.cursor: The cursor type to use
         :param int pool_idle_ttl: How long idle pools keep connections open
         :param int pool_max_size: The maximum size of the pool to use
+        :param tornado.ioloop.IOLoop io_loop: IOLoop instance to use
 
         """
-        self._callbacks = dict()
         self._connections = dict()
-        self._exceptions = dict()
+        self._futures = dict()
         self._listeners = dict()
 
         self._cursor_factory = cursor_factory
-        self._ioloop = ioloop.IOLoop.instance()
+        self._ioloop = io_loop or ioloop.IOLoop.instance()
         self._pool_manager = pool.PoolManager.instance()
         self._uri = uri
 
@@ -158,7 +166,19 @@ class TornadoSession(session.Session):
         if self.pid not in self._pool_manager:
             self._pool_manager.create(self.pid, pool_idle_ttl, pool_max_size)
 
-    @gen.coroutine
+
+    @property
+    def connection(self):
+        """Do not use this directly with Tornado applications
+
+        :return:
+        """
+        return None
+
+    @property
+    def cursor(self):
+        return None
+
     def callproc(self, name, args=None):
         """Call a stored procedure asynchronously on the server, passing in the
         arguments to be passed to the stored procedure, yielding the results
@@ -181,27 +201,7 @@ class TornadoSession(session.Session):
         :raises: queries.ProgrammingError
 
         """
-        conn = yield self._connect()
-
-        # Setup a callback to wait on the query result
-        self._callbacks[conn.fileno()] = yield gen.Callback((self,
-                                                             conn.fileno()))
-
-        # Get the cursor, execute the query and wait for the result
-        cursor = self._get_cursor(conn)
-        cursor.callproc(name, args)
-        yield gen.Wait((self, conn.fileno()))
-
-        # If there was an exception, cleanup, then raise it
-        if (conn.fileno() in self._exceptions and
-                self._exceptions[conn.fileno()]):
-            error = self._exceptions[conn.fileno()]
-            self._exec_cleanup(cursor, conn.fileno())
-            raise error
-
-        # Return the result if there are any
-        cleanup = yield gen.Callback((self, self._exec_cleanup))
-        raise gen.Return(Results(cursor, cleanup, conn.fileno()))
+        return self._execute('callproc', name, args)
 
     @gen.coroutine
     def listen(self, channel, callback):
@@ -221,7 +221,7 @@ class TornadoSession(session.Session):
         self._listeners[channel] = (conn.fileno(), cursor)
 
         # Send the LISTEN to PostgreSQL
-        cursor.execute("LISTEN %s" % channel)
+        cursor.execute('LISTEN %s' % channel)
 
         # Loop while we have listeners and a channel
         while channel in self._listeners and self._listeners[channel]:
@@ -236,10 +236,9 @@ class TornadoSession(session.Session):
 
             # Set a new callback for the fd if we're not exiting
             if channel in self._listeners:
-                self._callbacks[conn.fileno()] = \
+                self._futures[conn.fileno()] = \
                     yield gen.Callback((self, conn.fileno()))
 
-    @gen.coroutine
     def query(self, sql, parameters=None):
         """Issue a query asynchronously on the server, mogrifying the
         parameters against the sql statement and yielding the results
@@ -262,29 +261,8 @@ class TornadoSession(session.Session):
         :raises: queries.ProgrammingError
 
         """
-        conn = yield self._connect()
+        return self._execute('execute', sql, parameters)
 
-        # Setup a callback to wait on the query result
-        self._callbacks[conn.fileno()] = yield gen.Callback((self,
-                                                             conn.fileno()))
-
-        # Get the cursor, execute the query and wait for the result
-        cursor = self._get_cursor(conn)
-        cursor.execute(sql, parameters)
-        yield gen.Wait((self, conn.fileno()))
-        del self._callbacks[conn.fileno()]
-
-        # If there was an exception, cleanup, then raise it
-        if (conn.fileno() in self._exceptions and
-                self._exceptions[conn.fileno()]):
-            error = self._exceptions[conn.fileno()]
-            self._exec_cleanup(cursor, conn.fileno())
-            raise error
-
-        # Return the result if there are any
-        raise gen.Return(Results(cursor, self._exec_cleanup, conn.fileno()))
-
-    @gen.coroutine
     def unlisten(self, channel):
         """Cancel a listening to notifications on a PostgreSQL notification
         channel.
@@ -293,24 +271,23 @@ class TornadoSession(session.Session):
 
         """
         if channel not in self._listeners:
-            raise ValueError("No listeners for specified channel")
+            raise ValueError('No listeners for specified channel')
 
         # Get the fd and cursor, then remove the listener
         fd, cursor = self._listeners[channel]
         del self._listeners[channel]
 
         # Call the callback waiting in the LISTEN loop
-        self._callbacks[fd]((self, fd))
+        self._futures[fd] = concurrent.Future()
 
         # Create a callback, unlisten and wait for the result
-        self._callbacks[fd] = yield gen.Callback((self, fd))
-        cursor.execute("UNLISTEN %s;" % channel)
+        self._futures[fd] = yield gen.Callback((self, fd))
+        cursor.execute('UNLISTEN %s;' % channel)
         yield gen.Wait((self, fd))
 
         # Close the cursor and cleanup the references for this request
         self._exec_cleanup(cursor, fd)
 
-    @gen.coroutine
     def _connect(self):
         """Connect to PostgreSQL, either by reusing a connection from the pool
         if possible, or by creating the new connection.
@@ -319,53 +296,58 @@ class TornadoSession(session.Session):
         :raises: pool.NoIdleConnectionsError
 
         """
+        future = concurrent.Future()
+
         # Attempt to get a cached connection from the connection pool
         try:
             connection = self._pool_manager.get(self.pid, self)
 
             self._connections[connection.fileno()] = connection
-            self._callbacks[connection.fileno()] = None
-            self._exceptions[connection.fileno()] = None
+            self._futures[connection.fileno()] = None
 
             # Add the connection to the IOLoop
             self._ioloop.add_handler(connection.fileno(), self._on_io_events,
                                      ioloop.IOLoop.WRITE)
+            future.set_result(connection)
 
         except pool.NoIdleConnectionsError:
-            # "Block" while the pool is full
-            while self._pool_manager.is_full(self.pid):
-                LOGGER.warning('Pool %s is full, waiting 100ms', self.pid)
-                timeout = yield gen.Callback((self, 'connect'))
-                self._ioloop.add_timeout(100, timeout)
-                yield gen.Wait((self, 'connect'))
+            self._create_connection(future)
 
-            # Create a new PostgreSQL connection
-            kwargs = utils.uri_to_kwargs(self._uri)
-            connection = self._psycopg2_connect(kwargs)
-            fd = connection.fileno()
+        return future
 
-            # Add the connection for use in _poll_connection
-            self._connections[fd] = connection
-            self._exceptions[fd] = None
+    def _create_connection(self, future):
+        """Create a new PostgreSQL connection
 
-            # Add a callback for either connecting or waiting for the query
-            self._callbacks[fd] = yield gen.Callback((self, fd))
+        :param tornado.concurrent.Future future: future for new conn result
 
-            # Add the connection to the IOLoop
-            self._ioloop.add_handler(connection.fileno(), self._on_io_events,
-                                     ioloop.IOLoop.WRITE)
+        """
+        # Create a new PostgreSQL connection
+        kwargs = utils.uri_to_kwargs(self._uri)
+        connection = self._psycopg2_connect(kwargs)
+        fd = connection.fileno()
 
-            # Wait for the connection
-            yield gen.Wait((self, fd))
-            del self._callbacks[fd]
+        # Add the connection for use in _poll_connection
+        self._connections[fd] = connection
+
+        def on_connected(cf):
+            """Invoked by the IOLoop when the future is complete for the
+            connection
+
+            :param Future cf: The future for the initial connection
+
+            """
+            del self._futures[fd]
+            if cf.exception():
+                future.set_exception(cf.exception())
 
             # Add the connection to the pool
             self._pool_manager.add(self.pid, connection)
             self._pool_manager.lock(self.pid, connection, self)
 
-            # Added in because psycopg2ct connects and leaves the connection in
-            # a weird state: consts.STATUS_DATESTYLE, returning from
-            # Connection._setup without setting the state as const.STATUS_OK
+            # Added in because psycopg2ct connects and leaves the
+            # connection in a weird state: consts.STATUS_DATESTYLE,
+            # returning from Connection._setup without setting the state
+            # as const.STATUS_OK
             if PYPY:
                 connection.reset()
 
@@ -373,7 +355,71 @@ class TornadoSession(session.Session):
             self._register_unicode(connection)
             self._register_uuid(connection)
 
-        raise gen.Return(connection)
+            # Set the future result
+            future.set_result(connection)
+
+        # Add a future that fires once connected
+        self._futures[fd] = concurrent.Future()
+        self._ioloop.add_future(self._futures[fd], on_connected)
+
+        # Add the connection to the IOLoop
+        self._ioloop.add_handler(connection.fileno(),
+                                 self._on_io_events,
+                                 ioloop.IOLoop.WRITE)
+
+    def _execute(self, method, query, parameters=None):
+        """Issue a query asynchronously on the server, mogrifying the
+        parameters against the sql statement and yielding the results
+        as a :py:class:`Results <queries.tornado_session.Results>` object.
+
+        This function reduces duplicate code for callproc and query by getting
+        the class attribute for the method passed in as the function to call.
+
+        :param str method: The method attribute to use
+        :param str query: The SQL statement or Stored Procedure name
+        :param list|dict parameters: A dictionary of query parameters
+        :rtype: Results
+        :raises: queries.DataError
+        :raises: queries.DatabaseError
+        :raises: queries.IntegrityError
+        :raises: queries.InternalError
+        :raises: queries.InterfaceError
+        :raises: queries.NotSupportedError
+        :raises: queries.OperationalError
+        :raises: queries.ProgrammingError
+
+        """
+        future = concurrent.Future()
+
+        def on_connected(cf):
+            """Invoked by the future returned by self._connect"""
+            conn = cf.result()
+            cursor = self._get_cursor(conn)
+
+            def completed(qf):
+                """Invoked by the IOLoop when the future has completed"""
+                if qf.exception():
+                    self._exec_cleanup(cursor, conn.fileno())
+                    future.set_exception(qf.exception())
+                future.set_result(Results(cursor,
+                                          self._exec_cleanup,
+                                          conn.fileno()))
+
+            # Setup a callback to wait on the query result
+            self._futures[conn.fileno()] = concurrent.Future()
+
+            # Add the future to the IOLoop
+            self._ioloop.add_future(self._futures[conn.fileno()], completed)
+
+            # Get the cursor, execute the query
+            func = getattr(cursor, method)
+            func(query, parameters)
+
+        # Grab a connection to PostgreSQL
+        self._ioloop.add_future(self._connect(), on_connected)
+
+        # Return the future for the query result
+        return future
 
     @gen.engine
     def _exec_cleanup(self, cursor, fd):
@@ -387,12 +433,10 @@ class TornadoSession(session.Session):
         cursor.close()
         self._pool_manager.free(self.pid, self._connections[fd])
 
-        if fd in self._exceptions:
-            del self._exceptions[fd]
-        if fd in self._callbacks:
-            del self._callbacks[fd]
         if fd in self._connections:
             del self._connections[fd]
+        if fd in self._futures:
+            del self._futures[fd]
 
         self._ioloop.remove_handler(fd)
         raise gen.Return()
@@ -420,11 +464,10 @@ class TornadoSession(session.Session):
         try:
             state = self._connections[fd].poll()
         except (psycopg2.Error, psycopg2.Warning) as error:
-            self._exceptions[fd] = error
-            yield self._callbacks[fd]((self, fd))
+            self._futures[fd].set_exception(error)
         else:
             if state == extensions.POLL_OK:
-                yield self._callbacks[fd]((self, fd))
+                self._futures[fd].set_result(True)
             elif state == extensions.POLL_WRITE:
                 self._ioloop.update_handler(fd, ioloop.IOLoop.WRITE)
             elif state == extensions.POLL_READ:
@@ -432,14 +475,6 @@ class TornadoSession(session.Session):
             elif state == extensions.POLL_ERROR:
                 LOGGER.debug('Error')
                 self._ioloop.remove_handler(fd)
-
-    @property
-    def connection(self):
-        return None
-
-    @property
-    def cursor(self):
-        return None
 
     def _psycopg2_connect(self, kwargs):
         """Return a psycopg2 connection for the specified kwargs. Extend for

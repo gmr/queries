@@ -4,8 +4,8 @@ Queries provides both a session based API and a stripped-down simple API for
 interacting with PostgreSQL. If you're writing applications that will only have
 one or two queries, the simple API may be useful. Instead of creating a session
 object when using the simple API methods (:py:meth:`queries.query`  and
-:py:meth:`queries.callproc`), this is done for you. Simply pass in your query and
-the `URIs <http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING>`_
+:py:meth:`queries.callproc`), this is done for you. Simply pass in your query
+and the `URIs <http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING>`_
 of the PostgreSQL server to connect to:
 
 .. code:: python
@@ -14,8 +14,8 @@ of the PostgreSQL server to connect to:
 
 Queries built-in connection pooling will re-use connections when possible,
 lowering the overhead of connecting and reconnecting. This is also true when
-you're using Queries sessions in different parts of your application in the same
-Python interpreter.
+you're using Queries sessions in different parts of your application in the
+same Python interpreter.
 
 .. _connection-uris:
 
@@ -50,15 +50,16 @@ Using queries.uri to generate a URI from individual arguments
 
 Using the queries.Session class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-To execute queries or call stored procedures, you start by creating an instance of the
-:py:class:`queries.Session` class. It can act as a context manager, meaning you can
-use it with the ``with`` keyword and it will take care of cleaning up after itself. For
-more information on the ``with`` keyword and context managers, see :pep:`343`.
+To execute queries or call stored procedures, you start by creating an instance
+of the :py:class:`queries.Session` class. It can act as a context manager,
+meaning you can use it with the ``with`` keyword and it will take care of
+cleaning up after itself. For more information on the ``with`` keyword and
+context managers, see :pep:`343`.
 
 In addition to both the :py:meth:`queries.Session.query` and
 :py:meth:`queries.Session.callproc` methods that
-are similar to the simple API methods, the :py:class:`queries.Session` class provides
-access to the psycopg2 :py:class:`~psycopg2.extensions.connection` and
+are similar to the simple API methods, the :py:class:`queries.Session` class
+provides access to the psycopg2 :py:class:`~psycopg2.extensions.connection` and
 :py:class:`~psycopg2.extensions.cursor`  objects.  It also provides methods for
 managing transactions and to the
 `LISTEN/NOTIFY <http://www.postgresql.org/docs/9.3/static/sql-listen.html>`_
@@ -66,8 +67,8 @@ functionality provided by PostgreSQL.
 
 **Using queries.Session.query**
 
-The following example shows how a :py:class:`queries.Session` object can be used
-as a context manager to query the database table:
+The following example shows how a :py:class:`queries.Session` object can be
+used as a context manager to query the database table:
 
 .. code:: python
 
