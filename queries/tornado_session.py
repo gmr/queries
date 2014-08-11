@@ -337,8 +337,10 @@ class TornadoSession(session.Session):
             def completed(qf):
                 """Invoked by the IOLoop when the future has completed"""
                 if qf.exception():
+                    LOGGER.debug('Cleaning cursor due to exception: %r',
+                                 qf.exception())
                     self._exec_cleanup(cursor, conn.fileno())
-                    future.set_exception(qf.exception())
+                    raise qf.exception()
                 future.set_result(Results(cursor,
                                           self._exec_cleanup,
                                           conn.fileno()))
@@ -367,6 +369,7 @@ class TornadoSession(session.Session):
         :param int fd: The connection file descriptor
 
         """
+        LOGGER.debug('Closing cursor and cleaning %s', fd)
         cursor.close()
         self._pool_manager.free(self.pid, self._connections[fd])
 
@@ -377,7 +380,6 @@ class TornadoSession(session.Session):
 
         self._ioloop.remove_handler(fd)
 
-    @gen.coroutine
     def _on_io_events(self, fd=None, events=None):
         """Invoked by Tornado's IOLoop when there are events for the fd
 
@@ -389,7 +391,6 @@ class TornadoSession(session.Session):
             return
         self._poll_connection(fd)
 
-    @gen.coroutine
     def _poll_connection(self, fd):
         """Check with psycopg2 to see what action to take. If the state is
         POLL_OK, we should have a pending callback for that fd.
