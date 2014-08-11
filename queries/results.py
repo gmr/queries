@@ -51,7 +51,7 @@ class Results(object):
         :rtype: int
 
         """
-        return self.cursor.rowcount
+        return self.cursor.rowcount if self.cursor.rowcount >= 0 else 0
 
     def __nonzero__(self):
         return bool(self.cursor.rowcount)
