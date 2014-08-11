@@ -56,9 +56,6 @@ class SessionInitTests(unittest.TestCase):
     def test_creates_empty_connections_dict(self):
         self.assertDictEqual(self.obj._connections, {})
 
-    def test_creates_empty_listeners_dict(self):
-        self.assertDictEqual(self.obj._listeners, {})
-
     def test_sets_default_cursor_factory(self):
         self.assertEqual(self.obj._cursor_factory, extras.RealDictCursor)
 
@@ -126,6 +123,12 @@ class SessionConnectTests(testing.AsyncTestCase):
                 add_handler.assert_called_once_with(self.conn.fileno(),
                                                     self.obj._on_io_events,
                                                     ioloop.IOLoop.WRITE)
+
+    @testing.gen_test
+    def test_psycopg2_connect_invokes_psycopg2_connect(self):
+        with mock.patch('psycopg2.connect') as connect:
+            self.obj._psycopg2_connect({})
+            connect.assert_called_once_with(async=True)
 
 
 class SessionPublicMethodTests(testing.AsyncTestCase):
