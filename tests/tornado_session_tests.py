@@ -124,7 +124,6 @@ class SessionConnectTests(testing.AsyncTestCase):
                                                     self.obj._on_io_events,
                                                     ioloop.IOLoop.WRITE)
 
-    @testing.gen_test
     def test_psycopg2_connect_invokes_psycopg2_connect(self):
         with mock.patch('psycopg2.connect') as connect:
             self.obj._psycopg2_connect({})
