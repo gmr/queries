@@ -60,10 +60,7 @@ In addition to both the :py:meth:`queries.Session.query` and
 :py:meth:`queries.Session.callproc` methods that
 are similar to the simple API methods, the :py:class:`queries.Session` class
 provides access to the psycopg2 :py:class:`~psycopg2.extensions.connection` and
-:py:class:`~psycopg2.extensions.cursor`  objects.  It also provides methods for
-managing transactions and to the
-`LISTEN/NOTIFY <http://www.postgresql.org/docs/9.3/static/sql-listen.html>`_
-functionality provided by PostgreSQL.
+:py:class:`~psycopg2.extensions.cursor`  objects.
 
 **Using queries.Session.query**
 

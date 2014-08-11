@@ -7,4 +7,3 @@ The following examples show more advanced use of Queries:
 
    tornado_basic
    tornado_multiple
-   tornado_listen

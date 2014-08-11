@@ -155,7 +155,6 @@ class TornadoSession(session.Session):
         """
         self._connections = dict()
         self._futures = dict()
-        self._listeners = dict()
 
         self._cursor_factory = cursor_factory
         self._ioloop = io_loop or ioloop.IOLoop.instance()
@@ -203,42 +202,6 @@ class TornadoSession(session.Session):
         """
         return self._execute('callproc', name, args)
 
-    @gen.coroutine
-    def listen(self, channel, callback):
-        """Listen for notifications from PostgreSQL on the specified channel,
-        passing in a callback to receive the notifications.
-
-        :param str channel: The channel to stop listening on
-        :param method callback: The method to call on each notification
-
-        """
-        conn = yield self._connect()
-
-        # Get the cursor
-        cursor = self._get_cursor(conn)
-
-        # Add the channel and callback to the class level listeners
-        self._listeners[channel] = (conn.fileno(), cursor)
-
-        # Send the LISTEN to PostgreSQL
-        cursor.execute('LISTEN %s' % channel)
-
-        # Loop while we have listeners and a channel
-        while channel in self._listeners and self._listeners[channel]:
-
-            # Wait for an event on that FD
-            yield gen.Wait((self, conn.fileno()))
-
-            # Iterate through all of the notifications
-            while conn.notifies:
-                notify = conn.notifies.pop()
-                callback(channel, notify.pid, notify.payload)
-
-            # Set a new callback for the fd if we're not exiting
-            if channel in self._listeners:
-                self._futures[conn.fileno()] = \
-                    yield gen.Callback((self, conn.fileno()))
-
     def query(self, sql, parameters=None):
         """Issue a query asynchronously on the server, mogrifying the
         parameters against the sql statement and yielding the results
@@ -262,31 +225,6 @@ class TornadoSession(session.Session):
 
         """
         return self._execute('execute', sql, parameters)
-
-    def unlisten(self, channel):
-        """Cancel a listening to notifications on a PostgreSQL notification
-        channel.
-
-        :param str channel: The channel to stop listening on
-
-        """
-        if channel not in self._listeners:
-            raise ValueError('No listeners for specified channel')
-
-        # Get the fd and cursor, then remove the listener
-        fd, cursor = self._listeners[channel]
-        del self._listeners[channel]
-
-        # Call the callback waiting in the LISTEN loop
-        self._futures[fd] = concurrent.Future()
-
-        # Create a callback, unlisten and wait for the result
-        self._futures[fd] = yield gen.Callback((self, fd))
-        cursor.execute('UNLISTEN %s;' % channel)
-        yield gen.Wait((self, fd))
-
-        # Close the cursor and cleanup the references for this request
-        self._exec_cleanup(cursor, fd)
 
     def _connect(self):
         """Connect to PostgreSQL, either by reusing a connection from the pool
