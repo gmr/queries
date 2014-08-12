@@ -140,6 +140,44 @@ class SessionConnectTests(testing.AsyncTestCase):
             self.obj._on_io_events(1337, ioloop.IOLoop.WRITE)
             poll.assert_called_once_with(1337)
 
+    def test_exec_cleanup_closes_cursor(self):
+        with mock.patch.object(self.obj._pool_manager, 'free'):
+            with mock.patch.object(self.obj._ioloop, 'remove_handler'):
+                self.obj._connections[14] = mock.Mock()
+                cursor = mock.Mock()
+                cursor.close = mock.Mock()
+                self.obj._exec_cleanup(cursor, 14)
+                cursor.close.assert_called_once_with()
+
+    def test_exec_cleanup_frees_connection(self):
+        with mock.patch.object(self.obj._pool_manager, 'free') as pm_free:
+            with mock.patch.object(self.obj._ioloop, 'remove_handler'):
+                self.obj._connections[14] = conn = mock.Mock()
+                self.obj._exec_cleanup(mock.Mock(), 14)
+                pm_free.assert_called_once_with(self.obj.pid, conn)
+
+    def test_exec_cleanup_frees_connection(self):
+        with mock.patch.object(self.obj._pool_manager, 'free'):
+            with mock.patch.object(self.obj._ioloop, 'remove_handler') as rh:
+                self.obj._connections[14] = mock.Mock()
+                self.obj._exec_cleanup(mock.Mock(), 14)
+                rh.assert_called_once_with(14)
+
+    def test_exec_removes_connection(self):
+        with mock.patch.object(self.obj._pool_manager, 'free'):
+            with mock.patch.object(self.obj._ioloop, 'remove_handler'):
+                self.obj._connections[14] = mock.Mock()
+                self.obj._exec_cleanup(mock.Mock(), 14)
+                self.assertNotIn(14, self.obj._connections)
+
+    def test_exec_removes_future(self):
+        with mock.patch.object(self.obj._pool_manager, 'free'):
+            with mock.patch.object(self.obj._ioloop, 'remove_handler'):
+                self.obj._connections[14] = mock.Mock()
+                self.obj._futures[14] = mock.Mock()
+                self.obj._exec_cleanup(mock.Mock(), 14)
+                self.assertNotIn(14, self.obj._futures)
+
 
 class SessionPublicMethodTests(testing.AsyncTestCase):
 
