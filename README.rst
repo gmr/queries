@@ -74,10 +74,7 @@ more information on the ``with`` keyword and context managers, see PEP343_.
 
 In addition to both the ``queries.Session.query`` and ``queries.Session.callproc``
 methods that are similar to the simple API methods, the ``queries.Session`` class
-provides access to the psycopg2 connection and cursor objects.  It also provides
-methods for managing transactions and to the
-`LISTEN/NOTIFY <http://www.postgresql.org/docs/9.3/static/sql-listen.html>`_
-functionality provided by PostgreSQL.
+provides access to the psycopg2 connection and cursor objects.  
 
 **Using queries.Session.query**
 
