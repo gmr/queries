@@ -38,8 +38,9 @@ See the :doc:`examples/index` for more :py:meth:`~queries.TornadoSession` exampl
 
 Class Documentation
 -------------------
-.. autoclass:: queries.TornadoSession
+.. autoclass:: queries.tornado_session.TornadoSession
     :members:
+    :inherited-members:
 
 .. autoclass:: queries.tornado_session.Results
     :members:
