@@ -22,15 +22,15 @@ class PYPYDetectionTests(unittest.TestCase):
 class URICreationTests(unittest.TestCase):
 
     def test_uri_with_password(self):
-        expectation = 'pgsql://foo:bar@baz:5433/qux'
+        expectation = 'postgresql://foo:bar@baz:5433/qux'
         self.assertEqual(queries.uri('baz', 5433, 'qux', 'foo', 'bar'),
                          expectation)
 
     def test_uri_without_password(self):
-        expectation = 'pgsql://foo@baz:5433/qux'
+        expectation = 'postgresql://foo@baz:5433/qux'
         self.assertEqual(queries.uri('baz', 5433, 'qux', 'foo'),
                          expectation)
 
     def test_default_uri(self):
-        expectation = 'pgsql://postgres@localhost:5432/postgres'
+        expectation = 'postgresql://postgres@localhost:5432/postgres'
         self.assertEqual(queries.uri(), expectation)

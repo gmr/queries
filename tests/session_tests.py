@@ -21,7 +21,7 @@ from queries import PYPY
 
 class SessionTestCase(unittest.TestCase):
 
-    URI = 'pgsql://foo:bar@localhost:5432/foo'
+    URI = 'postgresql://foo:bar@localhost:5432/foo'
 
     @mock.patch('psycopg2.connect')
     @mock.patch('psycopg2.extensions.register_type')

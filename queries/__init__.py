@@ -39,7 +39,7 @@ except ImportError:
 logging.getLogger('queries').addHandler(NullHandler())
 
 # Defaults
-DEFAULT_URI = 'pgsql://localhost:5432'
+DEFAULT_URI = 'postgresql://localhost:5432'
 
 # Mappings to queries classes and methods
 from queries.results import Results
@@ -64,8 +64,8 @@ def uri(host='localhost', port=5432, dbname='postgres', user='postgres',
 
     """
     if password:
-        return 'pgsql://%s:%s@%s:%i/%s' % (user, password, host, port, dbname)
-    return 'pgsql://%s@%s:%i/%s' % (user, host, port, dbname)
+        return 'postgresql://%s:%s@%s:%i/%s' % (user, password, host, port, dbname)
+    return 'postgresql://%s@%s:%i/%s' % (user, host, port, dbname)
 
 
 # For ease of access to different cursor types

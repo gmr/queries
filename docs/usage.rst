@@ -10,7 +10,7 @@ of the PostgreSQL server to connect to:
 
 .. code:: python
 
-    queries.query("SELECT now()", "pgsql://postgres@localhost:5432/postgres")
+    queries.query("SELECT now()", "postgresql://postgres@localhost:5432/postgres")
 
 Queries built-in connection pooling will re-use connections when possible,
 lowering the overhead of connecting and reconnecting. This is also true when
@@ -26,7 +26,7 @@ with, Queries will use the current OS username for both. You can also omit the
 URI when connecting to connect to localhost on port 5432 as the current OS user,
 connecting to a database named for the current user. For example, if your
 username is *fred* and you omit the URI when issuing :py:meth:`queries.query`
-the URI that is constructed would be ``pgsql://fred@localhost:5432/fred``.
+the URI that is constructed would be ``postgresql://fred@localhost:5432/fred``.
 
 If you'd rather use individual values for the connection, the queries.uri()
 method provides a quick and easy way to create a URI to pass into the various
@@ -46,7 +46,7 @@ Using queries.uri to generate a URI from individual arguments
 .. code:: python
 
     >>> queries.uri("server-name", 5432, "dbname", "user", "pass")
-    'pgsql://user:pass@server-name:5432/dbname'
+    'postgresql://user:pass@server-name:5432/dbname'
 
 Using the queries.Session class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

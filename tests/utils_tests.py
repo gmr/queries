@@ -22,7 +22,7 @@ class GetCurrentUserTests(unittest.TestCase):
 
 class URLParseTestCase(unittest.TestCase):
 
-    URI = 'pgsql://foo:bar@baz:5444/qux'
+    URI = 'postgresql://foo:bar@baz:5444/qux'
 
     def test_urlparse_hostname(self):
         """hostname should match expectation"""
@@ -47,8 +47,8 @@ class URLParseTestCase(unittest.TestCase):
 
 class URIToKWargsTestCase(unittest.TestCase):
 
-    URI = ('pgsql://foo:bar@baz:5444/qux?options=foo&options=bar&keepalives=1&'
-           'invalid=true')
+    URI = ('postgresql://foo:bar@baz:5444/qux?options=foo&options=bar'
+           '&keepalives=1&invalid=true')
 
     def test_uri_to_kwargs_host(self):
         """hostname should match expectation"""

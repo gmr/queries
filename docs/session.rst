@@ -26,7 +26,7 @@ the ``postgres`` user and then queries a table, iterating over the results:
 
     import queries
 
-    with queries.Session('pgsql://postgres@localhost/postgres') as session:
+    with queries.Session('postgresql://postgres@localhost/postgres') as session:
         for row in session.query('SELECT * FROM table'):
             print row
 
