@@ -92,12 +92,19 @@ def urlparse(url):
     """
     value = 'http%s' % url[5:] if url[:5] == 'postgresql' else url
     parsed = _urlparse.urlparse(value)
+
+    # Python 2.6 hack
+    if not parsed.query and '?' in parsed.path:
+        path, query = parsed.path.split('?')
+    else:
+        path, query = parsed.path, parsed.query
+
     hostname = parsed.hostname if parsed.hostname else ''
     return PARSED(parsed.scheme.replace('http', 'postgresql'),
                   parsed.netloc,
-                  parsed.path,
+                  path,
                   parsed.params,
-                  parsed.query,
+                  query,
                   parsed.fragment,
                   parsed.username,
                   parsed.password,
