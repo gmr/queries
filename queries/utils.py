@@ -91,9 +91,9 @@ def urlparse(url):
     :rtype: Parsed
 
     """
-    value = 'http%s' % url[5:] if url[:5] == 'pgsql' else url
+    value = 'http%s' % url[5:] if url[:5] == 'postgresql' else url
     parsed = _urlparse.urlparse(value)
-    return PARSED(parsed.scheme.replace('http', 'pgsql'), parsed.netloc,
+    return PARSED(parsed.scheme.replace('http', 'postgresql'), parsed.netloc,
                   parsed.path, parsed.params, parsed.query, parsed.fragment,
                   parsed.username, parsed.password, parsed.hostname,
                   parsed.port)
