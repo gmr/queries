@@ -14,9 +14,6 @@ PARSED = collections.namedtuple('Parsed',
                                 'scheme,netloc,path,params,query,fragment,'
                                 'username,password,hostname,port')
 
-DEFAULT_HOSTNAME = 'localhost'
-DEFAULT_PORT = 5432
-
 KEYWORDS = ['connect_timeout',
             'client_encoding',
             'options',
@@ -68,8 +65,8 @@ def uri_to_kwargs(uri):
     """
     parsed = urlparse(uri)
     default_user = get_current_user()
-    kwargs = {'host': parsed.hostname or DEFAULT_HOSTNAME,
-              'port': parsed.port or DEFAULT_PORT,
+    kwargs = {'host': parsed.hostname,
+              'port': parsed.port,
               'dbname': parsed.path[1:] or default_user,
               'user': parsed.username or default_user,
               'password': parsed.password}
