@@ -82,3 +82,15 @@ class URIToKWargsTestCase(unittest.TestCase):
     def test_uri_to_kwargs_invalid(self):
         """invalid query argument should not be in kwargs"""
         self.assertNotIn('invaid', utils.uri_to_kwargs(self.URI))
+
+    def test_unix_socket_path_format_one(self):
+        socket_path = 'postgresql://%2Fvar%2Flib%2Fpostgresql/dbname'
+        result = utils.uri_to_kwargs(socket_path)
+        self.assertEqual(result['host'], '/var/lib/postgresql')
+
+    def test_unix_socket_path_format2(self):
+        socket_path = 'postgresql:///postgres?host=/tmp/'
+        result = utils.uri_to_kwargs(socket_path)
+        self.assertEqual(result['host'], '/tmp/')
+
+

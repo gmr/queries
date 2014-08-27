@@ -74,6 +74,8 @@ def uri_to_kwargs(uri):
               'user': parsed.username or default_user,
               'password': parsed.password}
     values = parse_qs(parsed.query)
+    if 'host' in values:
+        kwargs['host'] = values['host'][0]
     for k in [k for k in values if k in KEYWORDS]:
         kwargs[k] = values[k][0] if len(values[k]) == 1 else values[k]
         try:
@@ -93,7 +95,14 @@ def urlparse(url):
     """
     value = 'http%s' % url[5:] if url[:5] == 'postgresql' else url
     parsed = _urlparse.urlparse(value)
-    return PARSED(parsed.scheme.replace('http', 'postgresql'), parsed.netloc,
-                  parsed.path, parsed.params, parsed.query, parsed.fragment,
-                  parsed.username, parsed.password, parsed.hostname,
+    hostname = parsed.hostname if parsed.hostname else ''
+    return PARSED(parsed.scheme.replace('http', 'postgresql'),
+                  parsed.netloc,
+                  parsed.path,
+                  parsed.params,
+                  parsed.query,
+                  parsed.fragment,
+                  parsed.username,
+                  parsed.password,
+                  hostname.replace('%2f', '/'),
                   parsed.port)
