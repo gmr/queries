@@ -3,15 +3,12 @@ Tests for functionality in the tornado_session module
 
 """
 import mock
-import tempfile
-import time
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
 from psycopg2 import extras
-import psycopg2
 
 from tornado import concurrent
 from tornado import gen

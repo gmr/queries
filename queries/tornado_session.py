@@ -287,7 +287,7 @@ class TornadoSession(session.Session):
             # returning from Connection._setup without setting the state
             # as const.STATUS_OK
             if PYPY:
-                connection.reset()
+                connection.status = extensions.STATUS_READY
 
             # Register the custom data types
             self._register_unicode(connection)
