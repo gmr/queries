@@ -63,9 +63,11 @@ def uri(host='localhost', port=5432, dbname='postgres', user='postgres',
     :return str: The PostgreSQL connection URI
 
     """
+    if port:
+        host = '%s:%s' % (host, port)
     if password:
-        return 'postgresql://%s:%s@%s:%i/%s' % (user, password, host, port, dbname)
-    return 'postgresql://%s@%s:%i/%s' % (user, host, port, dbname)
+        return 'postgresql://%s:%s@%s/%s' % (user, password, host, dbname)
+    return 'postgresql://%s@%s/%s' % (user, host, dbname)
 
 
 # For ease of access to different cursor types
