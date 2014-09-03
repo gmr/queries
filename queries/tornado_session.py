@@ -37,6 +37,7 @@ from queries import pool
 from queries import results
 from queries import session
 from queries import utils
+
 from queries import DEFAULT_URI
 from queries import PYPY
 
@@ -165,7 +166,6 @@ class TornadoSession(session.Session):
         if self.pid not in self._pool_manager:
             self._pool_manager.create(self.pid, pool_idle_ttl, pool_max_size)
 
-
     @property
     def connection(self):
         """Do not use this directly with Tornado applications
@@ -226,6 +226,41 @@ class TornadoSession(session.Session):
         """
         return self._execute('execute', sql, parameters)
 
+    def validate(self):
+        """Validate the session can connect or has open connections to
+        PostgreSQL
+
+        :rtype: bool
+
+        """
+        future = concurrent.TracebackFuture()
+
+        def on_connected(cf):
+            if cf.exception():
+                future.set_exception(cf.exception())
+                return
+
+            connection = cf.result()
+            fd = connection.fileno()
+
+            # The connection would have been added to the pool manager, free it
+            self._pool_manager.free(self.pid, connection)
+            self._ioloop.remove_handler(fd)
+
+            if fd in self._connections:
+                del self._connections[fd]
+            if fd in self._futures:
+                del self._futures[fd]
+
+            # Return the success in validating the connection
+            future.set_result(True)
+
+        # Grab a connection to PostgreSQL
+        self._ioloop.add_future(self._connect(), on_connected)
+
+        # Return the future for the query result
+        return future
+
     def _connect(self):
         """Connect to PostgreSQL, either by reusing a connection from the pool
         if possible, or by creating the new connection.
@@ -234,20 +269,18 @@ class TornadoSession(session.Session):
         :raises: pool.NoIdleConnectionsError
 
         """
-        future = concurrent.Future()
+        future = concurrent.TracebackFuture()
 
         # Attempt to get a cached connection from the connection pool
         try:
             connection = self._pool_manager.get(self.pid, self)
-
             self._connections[connection.fileno()] = connection
-            self._futures[connection.fileno()] = None
-
-            # Add the connection to the IOLoop
-            self._ioloop.add_handler(connection.fileno(), self._on_io_events,
-                                     ioloop.IOLoop.WRITE)
             future.set_result(connection)
 
+            # Add the connection to the IOLoop
+            self._ioloop.add_handler(connection.fileno(),
+                                     self._on_io_events,
+                                     ioloop.IOLoop.WRITE)
         except pool.NoIdleConnectionsError:
             self._create_connection(future)
 
@@ -261,10 +294,11 @@ class TornadoSession(session.Session):
         """
         # Create a new PostgreSQL connection
         kwargs = utils.uri_to_kwargs(self._uri)
+
         connection = self._psycopg2_connect(kwargs)
-        fd = connection.fileno()
 
         # Add the connection for use in _poll_connection
+        fd = connection.fileno()
         self._connections[fd] = connection
 
         def on_connected(cf):
@@ -274,30 +308,31 @@ class TornadoSession(session.Session):
             :param Future cf: The future for the initial connection
 
             """
-            del self._futures[fd]
             if cf.exception():
                 future.set_exception(cf.exception())
 
-            # Add the connection to the pool
-            self._pool_manager.add(self.pid, connection)
-            self._pool_manager.lock(self.pid, connection, self)
+            else:
 
-            # Added in because psycopg2ct connects and leaves the
-            # connection in a weird state: consts.STATUS_DATESTYLE,
-            # returning from Connection._setup without setting the state
-            # as const.STATUS_OK
-            if PYPY:
-                connection.status = extensions.STATUS_READY
+                # Add the connection to the pool
+                self._pool_manager.add(self.pid, connection)
+                self._pool_manager.lock(self.pid, connection, self)
 
-            # Register the custom data types
-            self._register_unicode(connection)
-            self._register_uuid(connection)
+                # Added in because psycopg2ct connects and leaves the
+                # connection in a weird state: consts.STATUS_DATESTYLE,
+                # returning from Connection._setup without setting the state
+                # as const.STATUS_OK
+                if PYPY:
+                    connection.status = extensions.STATUS_READY
 
-            # Set the future result
-            future.set_result(connection)
+                # Register the custom data types
+                self._register_unicode(connection)
+                self._register_uuid(connection)
+
+                # Set the future result
+                future.set_result(connection)
 
         # Add a future that fires once connected
-        self._futures[fd] = concurrent.Future()
+        self._futures[fd] = concurrent.TracebackFuture()
         self._ioloop.add_future(self._futures[fd], on_connected)
 
         # Add the connection to the IOLoop
@@ -327,29 +362,37 @@ class TornadoSession(session.Session):
         :raises: queries.ProgrammingError
 
         """
-        future = concurrent.Future()
+        future = concurrent.TracebackFuture()
 
         def on_connected(cf):
             """Invoked by the future returned by self._connect"""
+            if cf.exception():
+                future.set_exception(cf.exception())
+                return
+
+            # Get the psycopg2 connection object and cursor
             conn = cf.result()
             cursor = self._get_cursor(conn)
 
             def completed(qf):
                 """Invoked by the IOLoop when the future has completed"""
                 if qf.exception():
-                    LOGGER.debug('Cleaning cursor due to exception: %r',
-                                 qf.exception())
+                    error = qf.exception()
+                    LOGGER.debug('Cleaning cursor due to exception: %r', error)
                     self._exec_cleanup(cursor, conn.fileno())
-                    raise qf.exception()
-                future.set_result(Results(cursor,
-                                          self._exec_cleanup,
-                                          conn.fileno()))
+                    future.set_exception(error)
+                else:
+                    results = Results(cursor,
+                                      self._exec_cleanup,
+                                      conn.fileno())
+                    future.set_result(results)
 
             # Setup a callback to wait on the query result
-            self._futures[conn.fileno()] = concurrent.Future()
+            self._futures[conn.fileno()] = concurrent.TracebackFuture()
 
             # Add the future to the IOLoop
-            self._ioloop.add_future(self._futures[conn.fileno()], completed)
+            self._ioloop.add_future(self._futures[conn.fileno()],
+                                    completed)
 
             # Get the cursor, execute the query
             func = getattr(cursor, method)
@@ -372,13 +415,12 @@ class TornadoSession(session.Session):
         LOGGER.debug('Closing cursor and cleaning %s', fd)
         cursor.close()
         self._pool_manager.free(self.pid, self._connections[fd])
+        self._ioloop.remove_handler(fd)
 
         if fd in self._connections:
             del self._connections[fd]
         if fd in self._futures:
             del self._futures[fd]
-
-        self._ioloop.remove_handler(fd)
 
     def _on_io_events(self, fd=None, events=None):
         """Invoked by Tornado's IOLoop when there are events for the fd
@@ -388,8 +430,14 @@ class TornadoSession(session.Session):
 
         """
         if fd not in self._connections:
+            LOGGER.warning('Received IO event for non-existing connection')
             return
-        self._poll_connection(fd)
+        try:
+            self._poll_connection(fd)
+        except OSError as error:
+            self._futures[fd].set_exception(
+                psycopg2.OperationalError('Connection error (%s)' % error)
+            )
 
     def _poll_connection(self, fd):
         """Check with psycopg2 to see what action to take. If the state is
@@ -404,14 +452,15 @@ class TornadoSession(session.Session):
             self._futures[fd].set_exception(error)
         else:
             if state == extensions.POLL_OK:
-                self._futures[fd].set_result(True)
+                if fd in self._futures:
+                    self._futures[fd].set_result(True)
             elif state == extensions.POLL_WRITE:
                 self._ioloop.update_handler(fd, ioloop.IOLoop.WRITE)
             elif state == extensions.POLL_READ:
                 self._ioloop.update_handler(fd, ioloop.IOLoop.READ)
             elif state == extensions.POLL_ERROR:
-                LOGGER.debug('Error')
                 self._ioloop.remove_handler(fd)
+                self._futures[fd].set_exception(psycopg2.Error('Poll Error'))
 
     def _psycopg2_connect(self, kwargs):
         """Return a psycopg2 connection for the specified kwargs. Extend for
@@ -422,5 +471,4 @@ class TornadoSession(session.Session):
 
         """
         kwargs['async'] = True
-        with stack_context.NullContext():
-            return psycopg2.connect(**kwargs)
+        return psycopg2.connect(**kwargs)

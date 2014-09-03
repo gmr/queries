@@ -29,6 +29,14 @@ add a widget, call PUT on /widget, to update a widget call POST on /widget/[SKU]
             """
             self.session = queries.TornadoSession()
 
+        @gen.coroutine
+        def prepare(self):
+            try:
+                yield self.session.validate()
+            except queries.OperationalError as error:
+                logging.error('Error connecting to the database: %s', error)
+                raise web.HTTPError(503)
+
         def options(self, *args, **kwargs):
             """Let the caller know what methods are supported
 

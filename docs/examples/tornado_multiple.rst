@@ -15,6 +15,14 @@ request and will wait until all queries are complete before progressing:
             self.session = queries.TornadoSession()
 
         @gen.coroutine
+        def prepare(self):
+            try:
+                yield self.session.validate()
+            except queries.OperationalError as error:
+                logging.error('Error connecting to the database: %s', error)
+                raise web.HTTPError(503)
+
+        @gen.coroutine
         def get(self, *args, **kwargs):
 
             # Issue the three queries and wait for them to finish before progressing

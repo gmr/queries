@@ -14,7 +14,7 @@ if os.environ.get('READTHEDOCS', None) == 'True':
     install_requires.append('tornado')
 
 setup(name='queries',
-      version='1.3.0',
+      version='1.4.0',
       description="Simplified PostgreSQL client built upon Psycopg2",
       maintainer="Gavin M. Roy",
       maintainer_email="gavinmroy@gmail.com",

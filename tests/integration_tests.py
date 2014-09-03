@@ -5,6 +5,7 @@ except ImportError:
     import unittest
 
 import queries
+from tornado import gen
 from tornado import testing
 
 
@@ -43,37 +44,56 @@ class SessionIntegrationTests(unittest.TestCase):
 class TornadoSessionIntegrationTests(testing.AsyncTestCase):
 
     def setUp(self):
-        self.io_loop = self.get_new_ioloop()
-        uri = queries.uri('localhost', 5432, 'postgres', 'postgres')
-        try:
-            self.session = queries.TornadoSession(uri,
-                                                  pool_max_size=10,
-                                                  io_loop=self.io_loop)
-        except queries.OperationalError as error:
-            raise unittest.SkipTest(str(error).split('\n')[0])
+        super(TornadoSessionIntegrationTests, self).setUp()
+        self.session = queries.TornadoSession(queries.uri('localhost',
+                                                          5432,
+                                                          'postgres',
+                                                          'postgres'),
+                                              pool_max_size=10,
+                                              io_loop=self.io_loop)
 
     @testing.gen_test
     def test_query_returns_results_object(self):
-        result = yield self.session.query('SELECT 1 AS value')
+        try:
+            result = yield self.session.query('SELECT 1 AS value')
+        except queries.OperationalError:
+            raise unittest.SkipTest('PostgreSQL is not running')
         self.assertIsInstance(result, queries.Results)
+        result.free()
 
     @testing.gen_test
     def test_query_result_value(self):
-        result = yield self.session.query('SELECT 1 AS value')
+        try:
+            result = yield self.session.query('SELECT 1 AS value')
+        except queries.OperationalError:
+            raise unittest.SkipTest('PostgreSQL is not running')
         self.assertDictEqual(result.as_dict(), {'value': 1})
+        result.free()
 
     @testing.gen_test
     def test_query_multirow_result_has_at_least_three_rows(self):
-        result = yield self.session.query('SELECT * FROM pg_stat_database')
+        try:
+            result = yield self.session.query('SELECT * FROM pg_stat_database')
+        except queries.OperationalError:
+            raise unittest.SkipTest('PostgreSQL is not running')
         self.assertGreaterEqual(result.count(), 3)
+        result.free()
 
     @testing.gen_test
     def test_callproc_returns_results_object(self):
         timestamp = int(datetime.datetime.now().strftime('%s'))
-        result = yield self.session.callproc('to_timestamp', [timestamp])
+        try:
+            result = yield self.session.callproc('to_timestamp', [timestamp])
+        except queries.OperationalError:
+            raise unittest.SkipTest('PostgreSQL is not running')
         self.assertIsInstance(result, queries.Results)
+        result.free()
 
     @testing.gen_test
     def test_callproc_mod_result_value(self):
-        result = yield self.session.callproc('mod', [6, 4])
+        try:
+            result = yield self.session.callproc('mod', [6, 4])
+        except queries.OperationalError:
+            raise unittest.SkipTest('PostgreSQL is not running')
         self.assertEqual(6 % 4, result[0]['mod'])
+        result.free()
