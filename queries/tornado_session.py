@@ -452,7 +452,7 @@ class TornadoSession(session.Session):
             self._futures[fd].set_exception(error)
         else:
             if state == extensions.POLL_OK:
-                if fd in self._futures:
+                if fd in self._futures and not self._futures[fd].done():
                     self._futures[fd].set_result(True)
             elif state == extensions.POLL_WRITE:
                 self._ioloop.update_handler(fd, ioloop.IOLoop.WRITE)
