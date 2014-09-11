@@ -37,7 +37,7 @@ Queries is available via pypi_ and can be installed with easy_install or pip:
 
 Usage
 -----
-Queries provides both a session based API for interacting with PostgreSQL.
+Queries provides a session based API for interacting with PostgreSQL.
 Simply pass in the URI_ of the PostgreSQL server to connect to when creating
 a session:
 
@@ -132,7 +132,7 @@ Tornado_ web application to send a JSON payload with the query result set.
         @gen.coroutine
         def get(self):
             results = yield self.session.query('SELECT * FROM names')
-            self.finish({'data': data.items()})
+            self.finish({'data': results.items()})
             results.free()
 
     application = web.Application([
