@@ -41,6 +41,9 @@ class Results(object):
         :rtype: mixed
 
         """
+        if not self.cursor.rowcount:
+            raise StopIteration
+
         self._rewind()
         for row in self.cursor:
             yield row
@@ -97,6 +100,9 @@ class Results(object):
         :rtype: list
 
         """
+        if not self.cursor.rowcount:
+            return []
+
         self.cursor.scroll(0, 'absolute')
         return self.cursor.fetchall()
 

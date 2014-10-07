@@ -41,6 +41,12 @@ class ResultsTestCase(unittest.TestCase):
         _row = self.obj[1]
         self.cursor.fetchone.assert_called_once_with()
 
+    def test_iter_on_empty(self):
+        self.cursor.rowcount = 0
+        with mock.patch.object(self.obj, '_rewind') as rewind:
+            [x for x in self.obj]
+            assert not rewind.called, '_rewind should not be called on empty result'
+
     def test_iter_rewinds(self):
         self.cursor.__iter__ = mock.Mock(return_value=iter([1, 2, 3]))
         with mock.patch.object(self.obj, '_rewind') as rewind:
@@ -98,6 +104,13 @@ class ResultsTestCase(unittest.TestCase):
 
     def test_free_raises_exception(self):
         self.assertRaises(NotImplementedError, self.obj.free)
+
+    def test_items_returns_on_empty(self):
+        self.cursor.rowcount = 0
+        self.cursor.scroll = mock.Mock()
+        self.cursor.fetchall = mock.Mock()
+        self.obj.items()
+        assert not self.cursor.scroll.called, 'Cursor.scroll should not be called on empty result'
 
     def test_items_invokes_scroll(self):
         self.cursor.scroll = mock.Mock()
