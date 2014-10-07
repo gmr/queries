@@ -86,8 +86,8 @@ as a context manager to query the database table:
     >>> import pprint
     >>> import queries
     >>>
-    >>> with queries.Session() as s:
-    ...     for row in s.query('SELECT * FROM names'):
+    >>> with queries.Session() as session:
+    ...     for row in session.query('SELECT * FROM names'):
     ...         pprint.pprint(row)
     ...
     {'id': 1, 'name': u'Jacob'}
