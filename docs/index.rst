@@ -51,7 +51,7 @@ Contents
 
 Issues
 ------
-Please report any issues to the Github repo at `https://github.com/gmr/queries/issues <https://github.com/gmr/rabbitpy/queries>`_
+Please report any issues to the Github repo at `https://github.com/gmr/queries/issues <https://github.com/gmr/queries/issues>`_
 
 Source
 ------
