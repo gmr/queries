@@ -18,7 +18,7 @@ script: nosetests --with-coverage --cover-package=queries --verbose
 after_success:
 - coveralls
 deploy:
-  distributions: sdist bdist_wheel
+  distributions: sdist
   provider: pypi
   on:
     python: 2.7

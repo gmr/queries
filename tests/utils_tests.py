@@ -47,8 +47,8 @@ class URLParseTestCase(unittest.TestCase):
 
 class URIToKWargsTestCase(unittest.TestCase):
 
-    URI = ('postgresql://foo:bar@baz:5444/qux?options=foo&options=bar'
-           '&keepalives=1&invalid=true')
+    URI = ('postgresql://foo:c%23%5E%25%23%27%24%40%3A@baz:5444/qux?'
+           'options=foo&options=bar&keepalives=1&invalid=true')
 
     def test_uri_to_kwargs_host(self):
         """hostname should match expectation"""
@@ -68,7 +68,8 @@ class URIToKWargsTestCase(unittest.TestCase):
 
     def test_uri_to_kwargs_password(self):
         """password should match expectation"""
-        self.assertEqual(utils.uri_to_kwargs(self.URI)['password'], 'bar')
+        self.assertEqual(utils.uri_to_kwargs(self.URI)['password'],
+                         'c#^%#\'$@:')
 
     def test_uri_to_kwargs_options(self):
         """options should match expectation"""

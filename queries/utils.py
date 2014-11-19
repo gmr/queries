@@ -9,6 +9,11 @@ try:
     from urllib import parse as _urlparse
 except ImportError:
     import urlparse as _urlparse
+try:
+    from urllib.parse import unquote
+except ImportError:
+    from urllib import unquote
+
 
 PARSED = collections.namedtuple('Parsed',
                                 'scheme,netloc,path,params,query,fragment,'
@@ -65,11 +70,12 @@ def uri_to_kwargs(uri):
     """
     parsed = urlparse(uri)
     default_user = get_current_user()
+    password = unquote(parsed.password) if parsed.password else None
     kwargs = {'host': parsed.hostname,
               'port': parsed.port,
               'dbname': parsed.path[1:] or default_user,
               'user': parsed.username or default_user,
-              'password': parsed.password}
+              'password': password}
     values = parse_qs(parsed.query)
     if 'host' in values:
         kwargs['host'] = values['host'][0]
