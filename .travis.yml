@@ -1,22 +1,24 @@
+cache:
+  directories:
+    - $HOME/.pip-cache/
 language: python
 python:
-- 2.6
-- 2.7
-- pypy
-- 3.2
-- 3.3
-- 3.4
+  - 2.6
+  - 2.7
+  - pypy
+  - 3.2
+  - 3.3
+  - 3.4
 addons:
   postgresql: '9.3'
 install:
-- if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
-- if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then pip install -r requirements.pip;
-  fi
-- if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install -r requirements.pypy;
-  fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2 --download-cache $HOME/.pip-cache; fi
+  - if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then pip install -r requirements.pip --download-cache $HOME/.pip-cache; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install -r requirements.pypy --download-cache $HOME/.pip-cache; fi
+  - pip install codecov --download-cache $HOME/.pip-cache
 script: nosetests --with-coverage --cover-package=queries --verbose
 after_success:
-- coveralls
+  - codecov
 deploy:
   distributions: sdist
   provider: pypi
