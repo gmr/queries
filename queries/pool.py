@@ -156,7 +156,7 @@ class Pool(object):
 
     def close(self):
         """Close the pool by closing and removing all of the connections"""
-        for cid in self.connections:
+        for cid in self.connections.keys():
             self.remove(self.connections[cid].handle)
         LOGGER.debug('Pool %s closed', self.id)
 
