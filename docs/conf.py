@@ -13,7 +13,6 @@
 # serve to show the default.
 import sys
 sys.path.insert(0, '../')
-import os
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -48,7 +47,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Queries'
-copyright = u'2014, Gavin M. Roy'
+copyright = u'2014 - 2015, Gavin M. Roy'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

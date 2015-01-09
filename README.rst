@@ -170,8 +170,8 @@ main GitHub repository of Queries as tags prior to version 1.2.0.
 .. |Downloads| image:: https://pypip.in/d/queries/badge.svg?
    :target: https://pypi.python.org/pypi/queries
 
-.. |Coverage| image:: https://img.shields.io/coveralls/gmr/queries.svg?
-   :target: https://coveralls.io/r/gmr/queries
+.. |Coverage| image:: https://codecov.io/github/gmr/flatdict/coverage.svg?branch=master
+   :target: https://codecov.io/github/gmr/flatdict?branch=master
 
 .. |Gitter| image:: https://badges.gitter.im/Join Chat.svg
    :target: https://gitter.im/gmr/rabbitpy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
