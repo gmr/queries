@@ -108,7 +108,8 @@ class PoolTests(unittest.TestCase):
         psycopg2_conns = [mock.Mock(), mock.Mock()]
         [obj.add(conn) for conn in psycopg2_conns]
         obj.close()
-        obj.remove.assert_hass_calls(psycopg2_conns)
+        psycopg2_calls = [mock.call(c) for c in psycopg2_conns]
+        obj.remove.assert_has_calls(psycopg2_calls)
 
     def test_free_invokes_connection_free(self):
         obj = pool.Pool(str(uuid.uuid4()))
