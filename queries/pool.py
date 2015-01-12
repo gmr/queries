@@ -302,7 +302,7 @@ class Pool(object):
         with self._lock:
             for cid in list(self.connections.keys()):
                 if self.connections[cid].executing:
-                    raise ConnectionBusyError
+                    raise ConnectionBusyError(cid)
                 if self.connections[cid].locked:
                     self.connections[cid].free()
                 self.connections[cid].close()

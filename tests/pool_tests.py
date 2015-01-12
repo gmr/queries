@@ -16,6 +16,14 @@ from queries import pool
 MAX_POOL_SIZE = 100
 
 
+def mock_connection():
+    conn = mock.MagicMock('psycopg2.extensions.connection')
+    conn.close = mock.Mock()
+    conn.closed = True
+    conn.isexecuting = mock.Mock(return_value=False)
+    return conn
+
+
 class PoolTests(unittest.TestCase):
 
     def test_id_is_set(self):
@@ -274,3 +282,11 @@ class PoolTests(unittest.TestCase):
         psycopg2_conn = mock.Mock()
         obj.add(psycopg2_conn)
         self.assertEqual(obj._connection(psycopg2_conn).handle, psycopg2_conn)
+
+    def test_shutdown_raises_when_executing(self):
+        psycopg2_conn = mock_connection()
+        psycopg2_conn.isexecuting.return_value = True
+        obj = pool.Pool(str(uuid.uuid4()))
+        obj.add(psycopg2_conn)
+        self.assertRaises(pool.ConnectionBusyError, obj.shutdown)
+
