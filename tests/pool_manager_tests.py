@@ -12,10 +12,21 @@ import uuid
 from queries import pool
 
 
+def mock_connection():
+    conn = mock.MagicMock('psycopg2.extensions.connection')
+    conn.close = mock.Mock()
+    conn.closed = True
+    conn.isexecuting = mock.Mock(return_value=False)
+    return conn
+
+
 class ManagerTests(unittest.TestCase):
 
     def setUp(self):
         self.manager = pool.PoolManager.instance()
+
+    def tearDown(self):
+        self.manager.shutdown()
 
     def test_singleton_behavior(self):
         self.assertEqual(pool.PoolManager.instance(), self.manager)
@@ -31,7 +42,7 @@ class ManagerTests(unittest.TestCase):
     def test_adding_to_pool(self):
         pid = str(uuid.uuid4())
         self.manager.create(pid)
-        psycopg2_conn = mock.Mock()
+        psycopg2_conn = mock_connection()
         self.manager.add(pid, psycopg2_conn)
         self.assertIn(psycopg2_conn, self.manager._pools[pid])
 
@@ -62,7 +73,7 @@ class ManagerTests(unittest.TestCase):
     def test_create_prevents_duplicate_pool_id(self):
         pid = str(uuid.uuid4())
         with mock.patch('queries.pool.Pool') as Pool:
-            self.manager._pools[pid] = Pool()
+            self.manager.create(pid, 10, 10, Pool)
             self.assertRaises(KeyError, self.manager.create, pid, 10, 10, Pool)
 
     def test_create_created_default_pool_type(self):
@@ -104,12 +115,12 @@ class ManagerTests(unittest.TestCase):
 
     def test_free_ensures_pool_exists(self):
         pid = str(uuid.uuid4())
-        psycopg2_conn = mock.Mock()
+        psycopg2_conn = mock_connection()
         self.assertRaises(KeyError, self.manager.free, pid, psycopg2_conn)
 
     def test_free_invokes_pool_free(self):
         pid = str(uuid.uuid4())
-        psycopg2_conn = mock.Mock()
+        psycopg2_conn = mock_connection()
         self.manager.create(pid)
         self.manager._pools[pid].free = free = mock.Mock()
         self.manager.free(pid, psycopg2_conn)
@@ -131,9 +142,10 @@ class ManagerTests(unittest.TestCase):
     def test_has_connection_returns_true(self):
         pid = str(uuid.uuid4())
         self.manager.create(pid)
-        psycopg2_conn = mock.Mock()
-        self.manager._pools[pid].connections[id(psycopg2_conn)] = psycopg2_conn
+        psycopg2_conn = mock_connection()
+        self.manager.add(pid, psycopg2_conn)
         self.assertTrue(self.manager.has_connection(pid, psycopg2_conn))
+        self.manager.remove(pid)
 
     def test_has_idle_connection_returns_false(self):
         pid = str(uuid.uuid4())
@@ -236,3 +248,13 @@ class ManagerTests(unittest.TestCase):
         self.manager._pools[pid].set_max_size = set_max_size = mock.Mock()
         self.manager.set_max_size(pid, 128)
         set_max_size.assert_called_once_with(128)
+
+    def test_shutdown_closes_all(self):
+        pid1, pid2 = str(uuid.uuid4()), str(uuid.uuid4())
+        self.manager.create(pid1)
+        self.manager._pools[pid1].shutdown = method1 = mock.Mock()
+        self.manager.create(pid2)
+        self.manager._pools[pid2].shutdown = method2 = mock.Mock()
+        self.manager.shutdown()
+        method1.assert_called_once_with()
+        method2.assert_called_once_with()

@@ -59,6 +59,15 @@ class Connection(object):
             return False
         return not self.used_by() is None
 
+    @property
+    def executing(self):
+        """Return if the connection is currently executing a query
+
+        :rtype: bool
+
+        """
+        return self.handle.isexecuting()
+
     def free(self):
         """Remove the lock on the connection if the connection is not active
 
@@ -95,6 +104,15 @@ class Connection(object):
             self.used_by = weakref.ref(session)
         LOGGER.debug('Connection %s locked', self.id)
 
+    @property
+    def locked(self):
+        """Return if the connection is currently exclusively locked
+
+        :rtype: bool
+
+        """
+        return self.used_by is not None
+
 
 class Pool(object):
     """A connection pool for gaining access to and managing connections"""
@@ -108,7 +126,7 @@ class Pool(object):
                  pool_id,
                  idle_ttl=DEFAULT_IDLE_TTL,
                  max_size=DEFAULT_MAX_SIZE):
-        self.connections = dict()
+        self.connections = {}
         self._id = pool_id
         self.idle_ttl = idle_ttl
         self.max_size = max_size
@@ -156,7 +174,7 @@ class Pool(object):
 
     def close(self):
         """Close the pool by closing and removing all of the connections"""
-        for cid in self.connections.keys():
+        for cid in list(self.connections.keys()):
             self.remove(self.connections[cid].handle)
         LOGGER.debug('Pool %s closed', self.id)
 
@@ -274,6 +292,22 @@ class Pool(object):
             del self.connections[cid]
         LOGGER.debug('Pool %s removed connection %s', self.id, cid)
 
+    def shutdown(self):
+        """Forcefully shutdown the entire pool, closing all non-executing
+        connections.
+
+        :raises: ConnectionBusyError
+
+        """
+        with self._lock:
+            for cid in list(self.connections.keys()):
+                if self.connections[cid].executing:
+                    raise ConnectionBusyError
+                if self.connections[cid].locked:
+                    self.connections[cid].free()
+                self.connections[cid].close()
+                del self.connections[cid]
+
     def set_idle_ttl(self, ttl):
         """Set the idle ttl
 
@@ -312,7 +346,7 @@ class PoolManager(object):
 
     """
     _lock = threading.Lock()
-    _pools = dict()
+    _pools = {}
 
     def __contains__(self, pid):
         """Returns True if the pool exists
@@ -345,8 +379,9 @@ class PoolManager(object):
         :param connection: The connection to add to the pool
 
         """
-        cls._ensure_pool_exists(pid)
-        cls._pools[pid].add(connection)
+        with cls._lock:
+            cls._ensure_pool_exists(pid)
+            cls._pools[pid].add(connection)
 
     @classmethod
     def clean(cls, pid):
@@ -356,12 +391,12 @@ class PoolManager(object):
         :param str pid: The pool id to clean
 
         """
-        cls._ensure_pool_exists(pid)
-        cls._pools[pid].clean()
+        with cls._lock:
+            cls._ensure_pool_exists(pid)
+            cls._pools[pid].clean()
 
-        # If the pool has no open connections, remove it
-        if not len(cls._pools[pid]):
-            with cls._lock:
+            # If the pool has no open connections, remove it
+            if not len(cls._pools[pid]):
                 del cls._pools[pid]
 
     @classmethod
@@ -403,8 +438,8 @@ class PoolManager(object):
         :rtype: psycopg2.extensions.connection
 
         """
-        cls._ensure_pool_exists(pid)
         with cls._lock:
+            cls._ensure_pool_exists(pid)
             return cls._pools[pid].get(session)
 
     @classmethod
@@ -416,9 +451,9 @@ class PoolManager(object):
         :type connection: psycopg2.extensions.connection
 
         """
-        LOGGER.debug('Freeing %s from pool %s', id(connection), pid)
-        cls._ensure_pool_exists(pid)
         with cls._lock:
+            LOGGER.debug('Freeing %s from pool %s', id(connection), pid)
+            cls._ensure_pool_exists(pid)
             cls._pools[pid].free(connection)
 
     @classmethod
@@ -431,8 +466,9 @@ class PoolManager(object):
         :rtype: bool
 
         """
-        cls._ensure_pool_exists(pid)
-        return connection in cls._pools[pid]
+        with cls._lock:
+            cls._ensure_pool_exists(pid)
+            return connection in cls._pools[pid]
 
     @classmethod
     def has_idle_connection(cls, pid):
@@ -442,8 +478,9 @@ class PoolManager(object):
         :rtype: bool
 
         """
-        cls._ensure_pool_exists(pid)
-        return bool(cls._pools[pid].idle_connections)
+        with cls._lock:
+            cls._ensure_pool_exists(pid)
+            return bool(cls._pools[pid].idle_connections)
 
     @classmethod
     def is_full(cls, pid):
@@ -453,8 +490,9 @@ class PoolManager(object):
         :rtype: bool
 
         """
-        cls._ensure_pool_exists(pid)
-        return cls._pools[pid].is_full
+        with cls._lock:
+            cls._ensure_pool_exists(pid)
+            return cls._pools[pid].is_full
 
     @classmethod
     def lock(cls, pid, connection, session):
@@ -466,19 +504,20 @@ class PoolManager(object):
         :param queries.Session session: The session to hold the lock
 
         """
-        cls._ensure_pool_exists(pid)
-        cls._pools[pid].lock(connection, session)
+        with cls._lock:
+            cls._ensure_pool_exists(pid)
+            cls._pools[pid].lock(connection, session)
 
     @classmethod
     def remove(cls, pid):
-        """Remove a pool if no connections are active.
+        """Remove a pool, closing all connections
 
         :param str pid: The pool ID
 
         """
-        cls._ensure_pool_exists(pid)
-        cls._pools[pid].close()
         with cls._lock:
+            cls._ensure_pool_exists(pid)
+            cls._pools[pid].close()
             del cls._pools[pid]
 
     @classmethod
@@ -497,17 +536,6 @@ class PoolManager(object):
         cls._pools[pid].remove(connection)
 
     @classmethod
-    def size(cls, pid):
-        """Return the number of connections in the pool
-
-        :param str pid: The pool id
-        :rtype int
-
-        """
-        cls._ensure_pool_exists(pid)
-        return len(cls._pools[pid])
-
-    @classmethod
     def set_idle_ttl(cls, pid, ttl):
         """Set the idle TTL for a pool, after which it will be destroyed.
 
@@ -515,8 +543,9 @@ class PoolManager(object):
         :param int ttl: The TTL for an idle pool
 
         """
-        cls._ensure_pool_exists(pid)
-        cls._pools[pid].set_idle_ttl(ttl)
+        with cls._lock:
+            cls._ensure_pool_exists(pid)
+            cls._pools[pid].set_idle_ttl(ttl)
 
     @classmethod
     def set_max_size(cls, pid, size):
@@ -526,8 +555,28 @@ class PoolManager(object):
         :param int size: The maximum number of connections
 
         """
-        cls._ensure_pool_exists(pid)
-        cls._pools[pid].set_max_size(size)
+        with cls._lock:
+            cls._ensure_pool_exists(pid)
+            cls._pools[pid].set_max_size(size)
+
+    @classmethod
+    def shutdown(cls):
+        """Close all connections on in all pools"""
+        for pid in list(cls._pools.keys()):
+            cls._pools[pid].shutdown()
+        LOGGER.info('Shutdown complete, all pooled connections closed')
+
+    @classmethod
+    def size(cls, pid):
+        """Return the number of connections in the pool
+
+        :param str pid: The pool id
+        :rtype int
+
+        """
+        with cls._lock:
+            cls._ensure_pool_exists(pid)
+            return len(cls._pools[pid])
 
     @classmethod
     def _ensure_pool_exists(cls, pid):

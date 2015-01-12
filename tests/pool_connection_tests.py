@@ -37,6 +37,22 @@ class ConnectionTests(unittest.TestCase):
         self.connection.used_by = mock.Mock()
         self.assertTrue(self.connection.busy)
 
+    def test_executing_is_true(self):
+        self.handle.isexecuting.return_value = True
+        self.assertTrue(self.connection.executing)
+
+    def test_executing_is_false(self):
+        self.handle.isexecuting.return_value = False
+        self.assertFalse(self.connection.executing)
+
+    def test_locked_is_true(self):
+        self.connection.used_by = mock.Mock()
+        self.assertTrue(self.connection.locked)
+
+    def test_locked_is_false(self):
+        self.connection.used_by = None
+        self.assertFalse(self.connection.locked)
+
     def test_closed_is_true(self):
         self.handle.closed = True
         self.assertTrue(self.connection.closed)
