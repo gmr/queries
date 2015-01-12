@@ -17,7 +17,7 @@ import platform
 # Import PyPy compatibility
 PYPY = False
 target = platform.python_implementation()
-if target == 'PyPy':
+if target == 'PyPy':  # pragma: no cover
     from psycopg2ct import compat
     compat.register()
     PYPY = True
@@ -25,7 +25,7 @@ if target == 'PyPy':
 # Add a Null logging handler to prevent logging output when un-configured
 try:
     from logging import NullHandler
-except ImportError:
+except ImportError:  # pragma: no cover
     class NullHandler(logging.Handler):
         """Python 2.6 does not have a NullHandler"""
         def emit(self, record):
@@ -47,7 +47,7 @@ from queries.session import Session
 
 try:
     from queries.tornado_session import TornadoSession
-except ImportError:
+except ImportError:  # pragma: no cover
     TornadoSession = None
 
 
