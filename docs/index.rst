@@ -1,8 +1,3 @@
-.. Queries documentation master file, created by
-   sphinx-quickstart on Fri Apr 25 10:36:39 2014.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Queries: PostgreSQL Simplified
 ==============================
 *Queries* is a BSD licensed opinionated wrapper of the psycopg2_ library for
@@ -46,6 +41,7 @@ Contents
    session
    results
    tornado_session
+   pool
    examples/index.rst
    history
 
