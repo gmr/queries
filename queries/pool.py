@@ -539,7 +539,7 @@ class PoolManager(object):
     def set_idle_ttl(cls, pid, ttl):
         """Set the idle TTL for a pool, after which it will be destroyed.
 
-        :param str pid: The process id
+        :param str pid: The pool id
         :param int ttl: The TTL for an idle pool
 
         """
