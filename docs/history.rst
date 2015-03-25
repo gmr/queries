@@ -1,5 +1,7 @@
 Version History
 ===============
+- 1.7.1 2015-03-25
+  - Fix TornadoSession's use of cleanup (#8) - Fix by Oren Itamar
 - 1.7.0 2015-01-13
   - Implement :py:meth:`Pool.shutdown <queries.pool.Pool.shutdown>` and :py:meth:`PoolManager.shutdown <queries.pool.PoolManager.shutdown>` to
     cleanly shutdown all open, non-executing connections across a Pool or all pools. Update locks in Pool operations to ensure atomicity.
