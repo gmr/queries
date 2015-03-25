@@ -118,7 +118,7 @@ class Results(results.Results):
         requests.
 
         """
-        yield self._cleanup(self.cursor, self._fd)
+        self._cleanup(self.cursor, self._fd)
 
 
 class TornadoSession(session.Session):
