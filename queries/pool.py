@@ -3,6 +3,7 @@ Connection Pooling
 
 """
 import logging
+import os
 import threading
 import time
 import weakref
@@ -10,7 +11,7 @@ import weakref
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_IDLE_TTL = 60
-DEFAULT_MAX_SIZE = 1
+DEFAULT_MAX_SIZE = os.environ.get('QUERIES_MAX_POOL_SIZE', 1)
 
 
 class Connection(object):
