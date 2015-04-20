@@ -65,6 +65,14 @@ methods.
     'postgresql://user:pass@server-name:5432/dbname'
 
 
+Environment Variables
+^^^^^^^^^^^^^^^^^^^^^
+
+Currently Queries uses the following environment variables for tweaking various
+configuration values.  The supported ones are:
+
+* ``QUERIES_MAX_POOL_SIZE`` - Modify the maximum size of the connection pool (default: 1)
+
 Using the queries.Session class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 To execute queries or call stored procedures, you start by creating an instance of the
@@ -74,7 +82,7 @@ more information on the ``with`` keyword and context managers, see PEP343_.
 
 In addition to both the ``queries.Session.query`` and ``queries.Session.callproc``
 methods that are similar to the simple API methods, the ``queries.Session`` class
-provides access to the psycopg2 connection and cursor objects.  
+provides access to the psycopg2 connection and cursor objects.
 
 **Using queries.Session.query**
 
