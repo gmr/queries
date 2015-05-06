@@ -7,7 +7,7 @@ target = platform.python_implementation()
 if target == 'PyPy':
     install_requires = ['psycopg2ct']
 else:
-    install_requires = ['psycopg2']
+    install_requires = ['psycopg2>=2.5.1']
 
 # Install tornado if generating docs on readthedocs
 if os.environ.get('READTHEDOCS', None) == 'True':
