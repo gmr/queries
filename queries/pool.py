@@ -523,13 +523,11 @@ class PoolManager(object):
 
     @classmethod
     def remove_connection(cls, pid, connection):
-        """Remove a connection from the pool, closing it if is open. Will raise
-        an ActiveConnectionError if the connection is active prior to removal.
+        """Remove a connection from the pool, closing it if is open.
 
         :param str pid: The pool ID
         :param connection: The connection to remove
         :type connection: psycopg2.extensions.connection
-        :raises: ActiveConnectionError
         :raises: ConnectionNotFoundError
 
         """
@@ -592,63 +590,47 @@ class PoolManager(object):
             raise KeyError('Pool %s has not been created' % pid)
 
 
-class ActiveConnectionError(Exception):
-    """Raised when removing an active connection from a pool"""
-
-    def __init__(self, pid, connection):
-        self.pid = pid
-        self.cid = connection.id
-
-    def __str__(self):
-        return 'Connection %s in pool %s is active' % (self.cid, self.pid)
-
-
-class ActivePoolError(Exception):
-    """Raised when removing a pool that has active connections"""
-
-    def __init__(self, pid):
-        self.pid = pid
-
-    def __str__(self):
-        return 'Pool %s has at least one active connection' % self.pid
-
-
-class ConnectionBusyError(Exception):
-    """Raised when trying to lock a connection that is already busy"""
-
+class ConnectionException(Exception):
     def __init__(self, cid):
         self.cid = cid
 
-    def __str__(self):
-        return 'Connection %s is busy' % self.cid
+
+class PoolException(Exception):
+    def __init__(self, pid):
+        self.pid = pid
 
 
-class ConnectionNotFoundError(Exception):
-    """Raised if a specific connection is not found in the pool"""
-
+class PoolConnectionException(Exception):
     def __init__(self, pid, cid):
         self.pid = pid
         self.cid = cid
 
+
+class ActivePoolError(PoolException):
+    """Raised when removing a pool that has active connections"""
+    def __str__(self):
+        return 'Pool %s has at least one active connection' % self.pid
+
+
+class ConnectionBusyError(ConnectionException):
+    """Raised when trying to lock a connection that is already busy"""
+    def __str__(self):
+        return 'Connection %s is busy' % self.cid
+
+
+class ConnectionNotFoundError(PoolConnectionException):
+    """Raised if a specific connection is not found in the pool"""
     def __str__(self):
         return 'Connection %s not found in pool %s' % (self.cid, self.pid)
 
 
-class NoIdleConnectionsError(Exception):
+class NoIdleConnectionsError(PoolException):
     """Raised if a pool does not have any idle, open connections"""
-
-    def __init__(self, pid):
-        self.pid = pid
-
     def __str__(self):
         return 'Pool %s has no idle connections' % self.pid
 
 
-class PoolFullError(Exception):
+class PoolFullError(PoolException):
     """Raised when adding a connection to a pool that has hit max-size"""
-
-    def __init__(self, pid):
-        self.pid = pid
-
     def __str__(self):
         return 'Pool %s is at its maximum capacity' % self.pid

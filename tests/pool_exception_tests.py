@@ -12,26 +12,6 @@ import uuid
 from queries import pool
 
 
-class ActiveConnectionErrorTestCase(unittest.TestCase):
-
-    def setUp(self):
-        self.pid = uuid.uuid4()
-        self.connection = mock.Mock()
-        self.connection.id = uuid.uuid4()
-        self.exception = pool.ActiveConnectionError(self.pid, self.connection)
-
-    def test_pid_is_assigned(self):
-        self.assertEqual(self.exception.pid, self.pid)
-
-    def test_cid_is_assigned(self):
-        self.assertEqual(self.exception.cid, self.connection.id)
-
-    def test_str_value(self):
-        expectation = 'Connection %s in pool %s is active' % \
-                      (self.connection.id, self.pid)
-        self.assertEqual(str(self.exception), expectation)
-
-
 class ActivePoolErrorTestCase(unittest.TestCase):
 
     def setUp(self):
