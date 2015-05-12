@@ -401,8 +401,7 @@ class PoolManager(object):
                 del cls._pools[pid]
 
     @classmethod
-    def create(cls, pid, idle_ttl=DEFAULT_IDLE_TTL, max_size=DEFAULT_MAX_SIZE,
-               pool_type=None):
+    def create(cls, pid, idle_ttl=DEFAULT_IDLE_TTL, max_size=DEFAULT_MAX_SIZE):
         """Create a new pool, with the ability to pass in values to override
         the default idle TTL and the default maximum size.
 
@@ -412,22 +411,17 @@ class PoolManager(object):
         A pool's max size defines the maximum number of connections that can
         be added to the pool to prevent unbounded open connections.
 
-        The pool_type value allows the invoking class to specify a different
-        type of Pool, allowing for different pooling behaviors.
-
         :param str pid: The pool ID
         :param int idle_ttl: Time in seconds for the idle TTL
         :param int max_size: The maximum pool size
-        :param class pool_type: The pool type to create
         :raises: KeyError
 
         """
         if pid in cls._pools:
             raise KeyError('Pool %s already exists' % pid)
-        pool_class = pool_type or Pool
         with cls._lock:
             LOGGER.debug("Creating Pool: %s (%i/%i)", pid, idle_ttl, max_size)
-            cls._pools[pid] = pool_class(pid, idle_ttl, max_size)
+            cls._pools[pid] = Pool(pid, idle_ttl, max_size)
 
     @classmethod
     def get(cls, pid, session):

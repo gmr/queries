@@ -73,22 +73,8 @@ class ManagerTests(unittest.TestCase):
     def test_create_prevents_duplicate_pool_id(self):
         pid = str(uuid.uuid4())
         with mock.patch('queries.pool.Pool') as Pool:
-            self.manager.create(pid, 10, 10, Pool)
-            self.assertRaises(KeyError, self.manager.create, pid, 10, 10, Pool)
-
-    def test_create_created_default_pool_type(self):
-        pid = str(uuid.uuid4())
-        self.manager.create(pid)
-        self.assertIsInstance(self.manager._pools[pid], pool.Pool)
-
-    def test_create_created_passed_in_pool_type(self):
-        pid = str(uuid.uuid4())
-
-        class FooPool(pool.Pool):
-            bar = True
-
-        self.manager.create(pid, 10, 10, FooPool)
-        self.assertIsInstance(self.manager._pools[pid], FooPool)
+            self.manager.create(pid, 10, 10)
+            self.assertRaises(KeyError, self.manager.create, pid, 10, 10)
 
     def test_create_passes_in_idle_ttl(self):
         pid = str(uuid.uuid4())
