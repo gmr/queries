@@ -5,7 +5,6 @@ except ImportError:
     import unittest
 
 import queries
-from tornado import gen
 from tornado import testing
 
 
