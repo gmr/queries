@@ -1,5 +1,7 @@
 Version History
 ===============
+- 1.7.5 2015-09-03
+  - Dont let Session and TornadoSession share connections
 - 1.7.1 2015-03-25
   - Fix TornadoSession's use of cleanup (#8) - Fix by Oren Itamar
 - 1.7.0 2015-01-13

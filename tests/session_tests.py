@@ -119,7 +119,8 @@ class SessionTestCase(unittest.TestCase):
         self.assertListEqual(self.obj.notices, [1, 2, 3])
 
     def test_pid_value(self):
-        expectation = str(hashlib.md5(self.URI.encode('utf-8')).hexdigest())
+        expectation = hashlib.md5(':'.join([self.obj.__class__.__name__,
+                                            self.URI]).encode('utf-8')).hexdigest()
         self.assertEqual(self.obj.pid, expectation)
 
     def test_query_invokes_cursor_execute(self):

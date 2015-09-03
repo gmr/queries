@@ -186,7 +186,8 @@ class Session(object):
         :rtype: str
 
         """
-        return str(hashlib.md5(self._uri.encode('utf-8')).hexdigest())
+        return hashlib.md5(':'.join([self.__class__.__name__,
+                                     self._uri]).encode('utf-8')).hexdigest()
 
     def query(self, sql, parameters=None):
         """A generator to issue a query on the server, mogrifying the
