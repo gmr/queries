@@ -69,7 +69,7 @@ class ConnectionTests(unittest.TestCase):
         self.handle.isexecuting.return_value = False
         self.connection.used_by = None
         self.connection.close()
-        self.handle.close.assertCalledOnce()
+        self.assertEqual(len(self.handle.close.mock_calls), 1)
 
     def test_free_raises_when_busy(self):
         self.handle.isexecuting.return_value = True
