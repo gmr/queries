@@ -2,12 +2,11 @@ from setuptools import setup
 import os
 import platform
 
-# Make the install_requires
-target = platform.python_implementation()
-if target == 'PyPy':
-    install_requires = ['psycopg2ct']
+# Include the proper requirements
+if platform.python_implementation() == 'PyPy':
+    install_requires = ['psycopg2cffi>=2.7.2,<3']
 else:
-    install_requires = ['psycopg2>=2.5.1']
+    install_requires = ['psycopg2>=2.5.1,<3']
 
 # Install tornado if generating docs on readthedocs
 if os.environ.get('READTHEDOCS', None) == 'True':
@@ -24,13 +23,14 @@ classifiers = ['Development Status :: 5 - Production/Stable',
                'Programming Language :: Python :: 3.2',
                'Programming Language :: Python :: 3.3',
                'Programming Language :: Python :: 3.4',
+               'Programming Language :: Python :: 3.5',
                'Programming Language :: Python :: Implementation :: CPython',
                'Programming Language :: Python :: Implementation :: PyPy',
                'Topic :: Database',
                'Topic :: Software Development :: Libraries']
 
 setup(name='queries',
-      version='1.7.5',
+      version='1.8.0',
       description="Simplified PostgreSQL client built upon Psycopg2",
       maintainer="Gavin M. Roy",
       maintainer_email="gavinmroy@gmail.com",
@@ -38,7 +38,7 @@ setup(name='queries',
       install_requires=install_requires,
       extras_require={'tornado': 'tornado'},
       license=open('LICENSE').read(),
-      package_data={'': ['LICENSE', 'README.md']},
+      package_data={'': ['LICENSE', 'README.rst']},
       packages=['queries'],
       classifiers=classifiers,
       zip_safe=True)
