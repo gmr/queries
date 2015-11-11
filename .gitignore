@@ -7,3 +7,4 @@ dist
 atlassian-ide-plugin.xml
 docs/_build
 .coverage
+env
