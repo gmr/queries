@@ -2,3 +2,4 @@ coverage
 mock
 nose
 codecov
+tornado
