@@ -1,6 +1,0 @@
-coverage
-mock
-nose
-psycopg2>=2.5.1
-python-coveralls
-tornado

@@ -1,3 +1,4 @@
+sudo: false
 cache:
   directories:
     - $HOME/.pip-cache/
@@ -9,14 +10,14 @@ python:
   - 3.2
   - 3.3
   - 3.4
+  - 3.5
 addons:
   postgresql: '9.3'
 install:
+  - pip install -r test-requirements.txt
   - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2 --download-cache $HOME/.pip-cache; fi
-  - if [[ $TRAVIS_PYTHON_VERSION != 'pypy' ]]; then pip install -r requirements.pip --download-cache $HOME/.pip-cache; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 'pypy' ]]; then pip install -r requirements.pypy --download-cache $HOME/.pip-cache; fi
-  - pip install codecov --download-cache $HOME/.pip-cache
-script: nosetests --with-coverage --cover-package=queries --verbose
+  - python setup.py develop
+script: nosetests
 after_success:
   - codecov
 deploy:
