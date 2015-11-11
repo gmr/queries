@@ -12,7 +12,7 @@ both fast and easy. Check out the `Usage`_ section below to see how easy it can 
 Key features include:
 
 - Simplified API
-- Support of Python 2.6+ and 3.2+
+- Support of Python 2.6+ and 3.3+
 - PyPy support via psycopg2cffi_
 - Asynchronous support for Tornado_
 - Connection information provided by URI
