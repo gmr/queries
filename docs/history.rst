@@ -1,5 +1,7 @@
 Version History
 ===============
+- 1.8.9 2015-11-11
+  - Move to psycopg2cffi for PyPy support
 - 1.7.5 2015-09-03
   - Dont let Session and TornadoSession share connections
 - 1.7.1 2015-03-25

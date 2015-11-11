@@ -3,7 +3,7 @@ Queries: PostgreSQL Simplified
 *Queries* is a BSD licensed opinionated wrapper of the psycopg2_ library for
 interacting with PostgreSQL.
 
-|Version| |Downloads|
+|Version| |Downloads| |License| |PythonVersions|
 
 The popular psycopg2_ package is a full-featured python client. Unfortunately
 as a developer, you're often repeating the same steps to get started with your
@@ -15,7 +15,7 @@ both fast and easy.
 
 - Simplified API
 - Support of Python 2.6+ and 3.2+
-- PyPy support via psycopg2ct
+- PyPy support via psycopg2cffi_
 - Asynchronous support for Tornado_
 - Connection information provided by URI
 - Query results delivered as a generator based iterators
@@ -69,15 +69,21 @@ Indices and tables
 
 .. _pypi: https://pypi.python.org/pypi/queries
 .. _psycopg2: https://pypi.python.org/pypi/psycopg2
-.. _URIs: http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING
+.. _documentation: https://queries.readthedocs.org
+.. _URI: http://www.postgresql.org/docs/9.3/static/libpq-connect.html#LIBPQ-CONNSTRING
 .. _pgsql_wrapper: https://pypi.python.org/pypi/pgsql_wrapper
 .. _Tornado: http://tornadoweb.org
+.. _PEP343: http://legacy.python.org/dev/peps/pep-0343/
+.. _psycopg2cffi: https://pypi.python.org/pypi/psycopg2cffi
 
-.. |Version| image:: https://badge.fury.io/py/queries.svg?
-   :target: http://badge.fury.io/py/queries
-
-.. |Status| image:: https://travis-ci.org/gmr/queries.svg?branch=master
-   :target: https://travis-ci.org/gmr/queries
-
-.. |Downloads| image:: https://pypip.in/d/queries/badge.svg?
+.. |Version| image:: https://img.shields.io/pypi/v/queries.svg?
    :target: https://pypi.python.org/pypi/queries
+
+.. |Downloads| image:: https://img.shields.io/pypi/dm/queries.svg?
+   :target: https://pypi.python.org/pypi/queries
+
+.. |License| image:: https://img.shields.io/github/license/gmr/queries.svg?
+   :target: https://github.com/gmr/queries
+
+.. |PythonVersions| image:: https://img.shields.io/pypi/pyversions/queries.svg?
+   :target: https://github.com/gmr/queries

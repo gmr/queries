@@ -13,7 +13,7 @@ Key features include:
 
 - Simplified API
 - Support of Python 2.6+ and 3.2+
-- PyPy support via psycopg2ct
+- PyPy support via psycopg2cffi_
 - Asynchronous support for Tornado_
 - Connection information provided by URI
 - Query results delivered as a generator based iterators
@@ -21,7 +21,7 @@ Key features include:
 - Ability to directly access psycopg2 ``connection`` and ``cursor`` objects
 - Internal connection pooling
 
-|Version| |Downloads| |Status| |Coverage| |Gitter|
+|Version| |Downloads| |Status| |Coverage| |CodeClimate| |License| |PythonVersions|
 
 Documentation
 -------------
@@ -168,18 +168,25 @@ main GitHub repository of Queries as tags prior to version 1.2.0.
 .. _pgsql_wrapper: https://pypi.python.org/pypi/pgsql_wrapper
 .. _Tornado: http://tornadoweb.org
 .. _PEP343: http://legacy.python.org/dev/peps/pep-0343/
+.. _psycopg2cffi: https://pypi.python.org/pypi/psycopg2cffi
 
-.. |Version| image:: https://badge.fury.io/py/queries.svg?
-   :target: http://badge.fury.io/py/queries
-
-.. |Status| image:: https://travis-ci.org/gmr/queries.svg?branch=master
-   :target: https://travis-ci.org/gmr/queries
-
-.. |Downloads| image:: https://pypip.in/d/queries/badge.svg?
+.. |Version| image:: https://img.shields.io/pypi/v/queries.svg?
    :target: https://pypi.python.org/pypi/queries
 
-.. |Coverage| image:: https://codecov.io/github/gmr/queries/coverage.svg?branch=master
+.. |Status| image:: https://img.shields.io/travis/gmr/queries.svg?
+   :target: https://travis-ci.org/gmr/queries
+
+.. |Coverage| image:: https://img.shields.io/codecov/c/github/gmr/queries.svg?
    :target: https://codecov.io/github/gmr/queries?branch=master
 
-.. |Gitter| image:: https://badges.gitter.im/Join Chat.svg
-   :target: https://gitter.im/gmr/rabbitpy?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+.. |Downloads| image:: https://img.shields.io/pypi/dm/queries.svg?
+   :target: https://pypi.python.org/pypi/queries
+
+.. |License| image:: https://img.shields.io/github/license/gmr/queries.svg?
+   :target: https://github.com/gmr/queries
+
+.. |CodeClimate| image:: https://img.shields.io/codeclimate/github/gmr/queries.svg?
+   :target: https://codeclimate.com/github/gmr/queries
+
+.. |PythonVersions| image:: https://img.shields.io/pypi/pyversions/queries.svg?
+   :target: https://github.com/gmr/queries
