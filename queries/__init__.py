@@ -8,7 +8,7 @@ The core `queries.Queries` class will automatically register support for UUIDs,
 Unicode and Unicode arrays.
 
 """
-__version__ = '1.8.0'
+__version__ = '1.8.1'
 version = __version__
 
 import logging
@@ -18,8 +18,8 @@ import platform
 PYPY = False
 target = platform.python_implementation()
 if target == 'PyPy':  # pragma: no cover
-    from psycopg2cffi import compat
-    compat.register()
+    import psycopg2cffi.compat
+    psycopg2cffi.compat.register()
     PYPY = True
 
 # Add a Null logging handler to prevent logging output when un-configured
