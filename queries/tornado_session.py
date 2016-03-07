@@ -444,12 +444,12 @@ class TornadoSession(session.Session):
             state = self._connections[fd].poll()
         except OSError as error:
             self._ioloop.remove_handler(fd)
-            if not self._futures[fd].exception():
+            if fd in self._futures and not self._futures[fd].done():
                 self._futures[fd].set_exception(
                     psycopg2.OperationalError('Connection error (%s)' % error)
                 )
         except (psycopg2.Error, psycopg2.Warning) as error:
-            if not self._futures[fd].exception():
+            if fd in self._futures and not self._futures[fd].done():
                 self._futures[fd].set_exception(error)
         else:
             if state == extensions.POLL_OK:
@@ -461,7 +461,7 @@ class TornadoSession(session.Session):
                 self._ioloop.update_handler(fd, ioloop.IOLoop.READ)
             elif state == extensions.POLL_ERROR:
                 self._ioloop.remove_handler(fd)
-                if not self._futures[fd].exception():
+                if fd in self._futures and not self._futures[fd].done():
                     self._futures[fd].set_exception(
                         psycopg2.Error('Poll Error'))
 
