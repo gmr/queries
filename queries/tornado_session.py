@@ -443,6 +443,7 @@ class TornadoSession(session.Session):
         try:
             state = self._connections[fd].poll()
         except OSError as error:
+            self._ioloop.remove_handler(fd)
             if not self._futures[fd].exception():
                 self._futures[fd].set_exception(
                     psycopg2.OperationalError('Connection error (%s)' % error)
