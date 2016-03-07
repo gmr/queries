@@ -30,7 +30,6 @@ from psycopg2 import extras
 from tornado import concurrent
 from tornado import gen
 from tornado import ioloop
-from tornado import stack_context
 import psycopg2
 
 from queries import pool
@@ -432,12 +431,7 @@ class TornadoSession(session.Session):
         if fd not in self._connections:
             LOGGER.warning('Received IO event for non-existing connection')
             return
-        try:
-            self._poll_connection(fd)
-        except OSError as error:
-            self._futures[fd].set_exception(
-                psycopg2.OperationalError('Connection error (%s)' % error)
-            )
+        self._poll_connection(fd)
 
     def _poll_connection(self, fd):
         """Check with psycopg2 to see what action to take. If the state is
@@ -448,8 +442,14 @@ class TornadoSession(session.Session):
         """
         try:
             state = self._connections[fd].poll()
+        except OSError as error:
+            if not self._futures[fd].exception():
+                self._futures[fd].set_exception(
+                    psycopg2.OperationalError('Connection error (%s)' % error)
+                )
         except (psycopg2.Error, psycopg2.Warning) as error:
-            self._futures[fd].set_exception(error)
+            if not self._futures[fd].exception():
+                self._futures[fd].set_exception(error)
         else:
             if state == extensions.POLL_OK:
                 if fd in self._futures and not self._futures[fd].done():
@@ -460,7 +460,9 @@ class TornadoSession(session.Session):
                 self._ioloop.update_handler(fd, ioloop.IOLoop.READ)
             elif state == extensions.POLL_ERROR:
                 self._ioloop.remove_handler(fd)
-                self._futures[fd].set_exception(psycopg2.Error('Poll Error'))
+                if not self._futures[fd].exception():
+                    self._futures[fd].set_exception(
+                        psycopg2.Error('Poll Error'))
 
     def _psycopg2_connect(self, kwargs):
         """Return a psycopg2 connection for the specified kwargs. Extend for
