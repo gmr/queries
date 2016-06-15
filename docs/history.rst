@@ -1,5 +1,7 @@
 Version History
 ===============
+- 1.8.10 2016-06-14
+  - Propagate PoolManager exceptions from TornadoSession (#20) - Fix by Dave Shawley
 - 1.8.9 2015-11-11
   - Move to psycopg2cffi for PyPy support
 - 1.7.5 2015-09-03

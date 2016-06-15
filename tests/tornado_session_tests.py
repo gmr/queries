@@ -175,6 +175,27 @@ class SessionConnectTests(testing.AsyncTestCase):
                 self.obj._exec_cleanup(mock.Mock(), 14)
                 self.assertNotIn(14, self.obj._futures)
 
+    def test_pool_manager_add_failures_are_propagated(self):
+        futures = []
+
+        def add_future(future, callback):
+            futures.append((future, callback))
+
+        obj = tornado_session.TornadoSession()
+        obj._ioloop = mock.Mock()
+        obj._ioloop.add_future = add_future
+
+        future = concurrent.Future()
+        with mock.patch.object(obj._pool_manager, 'add') as add_method:
+            add_method.side_effect = pool.PoolFullError(mock.Mock())
+            obj._create_connection(future)
+            self.assertEqual(len(futures), 1)
+
+            connected_future, callback = futures.pop()
+            connected_future.set_result(True)
+            callback(connected_future)
+            self.assertIs(future.exception(), add_method.side_effect)
+
 
 class SessionPublicMethodTests(testing.AsyncTestCase):
 

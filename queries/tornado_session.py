@@ -312,8 +312,14 @@ class TornadoSession(session.Session):
 
             else:
 
-                # Add the connection to the pool
-                self._pool_manager.add(self.pid, connection)
+                try:
+                    # Add the connection to the pool
+                    self._pool_manager.add(self.pid, connection)
+                except Exception as error:
+                    LOGGER.exception('Failed to add %r to the pool', self.pid)
+                    future.set_exception(error)
+                    return
+
                 self._pool_manager.lock(self.pid, connection, self)
 
                 # Added in because psycopg2ct connects and leaves the
