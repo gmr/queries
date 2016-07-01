@@ -8,6 +8,8 @@ import threading
 import time
 import weakref
 
+import psycopg2
+
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_IDLE_TTL = 60
@@ -152,6 +154,12 @@ class Pool(object):
             raise ValueError('Connection already exists in pool')
 
         if len(self.connections) == self.max_size:
+            LOGGER.warning('Race condition found when adding new connection')
+            try:
+                connection.close()
+            except psycopg2.Error as error:
+                LOGGER.error('Error closing the conn that cant be used: %s',
+                             error)
             raise PoolFullError(self)
         with self._lock:
             self.connections[id(connection)] = Connection(connection)
@@ -584,17 +592,22 @@ class PoolManager(object):
             raise KeyError('Pool %s has not been created' % pid)
 
 
-class ConnectionException(Exception):
+class QueriesException(Exception):
+    """Base Exception for all other Queries exceptions"""
+    pass
+
+
+class ConnectionException(QueriesException):
     def __init__(self, cid):
         self.cid = cid
 
 
-class PoolException(Exception):
+class PoolException(QueriesException):
     def __init__(self, pid):
         self.pid = pid
 
 
-class PoolConnectionException(Exception):
+class PoolConnectionException(PoolException):
     def __init__(self, pid, cid):
         self.pid = pid
         self.cid = cid
