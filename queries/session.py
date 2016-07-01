@@ -136,7 +136,7 @@ class Session(object):
         """
         if not self._conn:
             raise psycopg2.InterfaceError('Connection not open')
-
+        LOGGER.info('Closing connection %r in %s', self._conn, self.pid)
         self._pool_manager.free(self.pid, self._conn)
         self._pool_manager.remove_connection(self.pid, self._conn)
 
@@ -251,10 +251,12 @@ class Session(object):
     def _cleanup(self):
         """Remove the connection from the stack, closing out the cursor"""
         if self._cursor:
+            LOGGER.debug('Closing the cursor on %s', self.pid)
             self._cursor.close()
             self._cursor = None
 
         if self._conn:
+            LOGGER.debug('Freeing %s in the pool', self.pid)
             try:
                 pool.PoolManager.instance().free(self.pid, self._conn)
             except pool.ConnectionNotFoundError:
@@ -279,7 +281,7 @@ class Session(object):
 
             # Create a new PostgreSQL connection
             kwargs = utils.uri_to_kwargs(self._uri)
-            LOGGER.debug("Creating a new connection for %s", self.pid)
+            LOGGER.info("Creating a new connection for %s", self.pid)
             connection = self._psycopg2_connect(kwargs)
 
             self._pool_manager.add(self.pid, connection)
