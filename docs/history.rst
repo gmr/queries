@@ -1,5 +1,10 @@
 Version History
 ===============
+- 1.9.0 2016-07-01
+  - Handle a potential race condition in TornadoSession when too many simultaneous new connections are made and a pool fills up
+  - Increase logging in various places to be more informative
+  - Restructure queries specific exceptions to all extend off of a base QueriesException
+  - Trivial code cleanup
 - 1.8.10 2016-06-14
   - Propagate PoolManager exceptions from TornadoSession (#20) - Fix by Dave Shawley
 - 1.8.9 2015-11-11

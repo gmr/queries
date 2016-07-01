@@ -8,7 +8,7 @@ The core `queries.Queries` class will automatically register support for UUIDs,
 Unicode and Unicode arrays.
 
 """
-__version__ = '1.8.10'
+__version__ = '1.9.0'
 version = __version__
 
 import logging
