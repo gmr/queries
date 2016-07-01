@@ -291,6 +291,8 @@ class TornadoSession(session.Session):
         :param tornado.concurrent.Future future: future for new conn result
 
         """
+        LOGGER.debug('Creating a new connection for %s', self.pid)
+
         # Create a new PostgreSQL connection
         kwargs = utils.uri_to_kwargs(self._uri)
 
@@ -314,8 +316,9 @@ class TornadoSession(session.Session):
 
                 try:
                     # Add the connection to the pool
+                    LOGGER.debug('Connection established for %s', self.pid)
                     self._pool_manager.add(self.pid, connection)
-                except Exception as error:
+                except (ValueError, pool.PoolException) as error:
                     LOGGER.exception('Failed to add %r to the pool', self.pid)
                     future.set_exception(error)
                     return
@@ -387,10 +390,8 @@ class TornadoSession(session.Session):
                     self._exec_cleanup(cursor, conn.fileno())
                     future.set_exception(error)
                 else:
-                    results = Results(cursor,
-                                      self._exec_cleanup,
-                                      conn.fileno())
-                    future.set_result(results)
+                    value = Results(cursor, self._exec_cleanup, conn.fileno())
+                    future.set_result(value)
 
             # Setup a callback to wait on the query result
             self._futures[conn.fileno()] = concurrent.TracebackFuture()
