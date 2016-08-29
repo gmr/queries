@@ -45,7 +45,7 @@ DEFAULT_ENCODING = 'UTF8'
 class Session(object):
     """The Session class allows for a unified (and simplified) view of
     interfacing with a PostgreSQL database server. The Session object can
-    act as a context manager, providing automated cleanup and simple, pythoic
+    act as a context manager, providing automated cleanup and simple, Pythonic
     way of interacting with the object.
 
     :param str uri: PostgreSQL connection URI
@@ -145,7 +145,7 @@ class Session(object):
 
     @property
     def connection(self):
-        """The current open connection to PostgreSQL.
+        """Return the current open connection to PostgreSQL.
 
         :rtype: psycopg2.extensions.connection
 
@@ -154,7 +154,7 @@ class Session(object):
 
     @property
     def cursor(self):
-        """The current, active cursor for the open connection.
+        """Return the current, active cursor for the open connection.
 
         :rtype: psycopg2.extensions.cursor
 
@@ -163,7 +163,7 @@ class Session(object):
 
     @property
     def encoding(self):
-        """The current client encoding value.
+        """Return the current client encoding value.
 
         :rtype: str
 
@@ -172,7 +172,7 @@ class Session(object):
 
     @property
     def notices(self):
-        """A list of up to the last 50 server notices sent to the client.
+        """Return a list of up to the last 50 server notices sent to the client.
 
         :rtype: list
 
@@ -181,7 +181,7 @@ class Session(object):
 
     @property
     def pid(self):
-        """Return the pool ID used for connection pooling
+        """Return the pool ID used for connection pooling.
 
         :rtype: str
 
