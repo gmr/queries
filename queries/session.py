@@ -281,7 +281,7 @@ class Session(object):
 
             # Create a new PostgreSQL connection
             kwargs = utils.uri_to_kwargs(self._uri)
-            LOGGER.info("Creating a new connection for %s", self.pid)
+            LOGGER.debug("Creating a new connection for %s", self.pid)
             connection = self._psycopg2_connect(kwargs)
 
             self._pool_manager.add(self.pid, connection)

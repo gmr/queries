@@ -1,5 +1,7 @@
 Version History
 ===============
+- 1.9.1 2016-10-25
+  - Handle exceptions raised when creating the connection
 - 1.9.0 2016-07-01
   - Handle a potential race condition in TornadoSession when too many simultaneous new connections are made and a pool fills up
   - Increase logging in various places to be more informative

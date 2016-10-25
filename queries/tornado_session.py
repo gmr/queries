@@ -23,6 +23,7 @@ Example Use:
 
 """
 import logging
+import socket
 
 from psycopg2 import extensions
 from psycopg2 import extras
@@ -296,7 +297,11 @@ class TornadoSession(session.Session):
         # Create a new PostgreSQL connection
         kwargs = utils.uri_to_kwargs(self._uri)
 
-        connection = self._psycopg2_connect(kwargs)
+        try:
+            connection = self._psycopg2_connect(kwargs)
+        except (psycopg2.Error, OSError, socket.error) as error:
+            future.set_exception(error)
+            return
 
         # Add the connection for use in _poll_connection
         fd = connection.fileno()
