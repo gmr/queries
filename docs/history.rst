@@ -1,7 +1,7 @@
 Version History
 ===============
 - 1.9.1 2016-10-25
-  - Handle exceptions raised when creating the connection
+  - Add better exception handling around connections and getting the logged in user
 - 1.9.0 2016-07-01
   - Handle a potential race condition in TornadoSession when too many simultaneous new connections are made and a pool fills up
   - Increase logging in various places to be more informative
@@ -12,7 +12,7 @@ Version History
 - 1.8.9 2015-11-11
   - Move to psycopg2cffi for PyPy support
 - 1.7.5 2015-09-03
-  - Dont let Session and TornadoSession share connections
+  - Don't let Session and TornadoSession share connections
 - 1.7.1 2015-03-25
   - Fix TornadoSession's use of cleanup (#8) - Fix by Oren Itamar
 - 1.7.0 2015-01-13
