@@ -3,6 +3,7 @@ Utility functions for access to OS level info and URI parsing
 
 """
 import collections
+import logging
 import os
 
 # All systems do not support pwd module
@@ -21,6 +22,7 @@ try:
 except ImportError:
     from urllib import unquote
 
+LOGGER = logging.getLogger(__name__)
 
 PARSED = collections.namedtuple('Parsed',
                                 'scheme,netloc,path,params,query,fragment,'
@@ -57,7 +59,10 @@ def get_current_user():
     if pwd is None:
         return getpass.getuser()
     else:
-        return pwd.getpwuid(os.getuid())[0]
+        try:
+            return pwd.getpwuid(os.getuid())[0]
+        except KeyError as error:
+            LOGGER.error('Could not get logged-in user: %s', error)
 
 
 def parse_qs(query_string):
