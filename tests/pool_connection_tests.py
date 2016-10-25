@@ -67,6 +67,7 @@ class ConnectionTests(unittest.TestCase):
 
     def test_close_invokes_handle_close(self):
         self.handle.isexecuting.return_value = False
+        self.handle.closed = False
         self.connection.used_by = None
         self.connection.close()
         self.assertEqual(len(self.handle.close.mock_calls), 1)
