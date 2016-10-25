@@ -37,7 +37,11 @@ class Connection(object):
         if self.busy:
             raise ConnectionBusyError(self)
         with self._lock:
-            self.handle.close()
+            if not self.handle.closed:
+                try:
+                    self.handle.close()
+                except psycopg2.InterfaceError as error:
+                    LOGGER.error('Error closing socket: %s', error)
 
     @property
     def closed(self):
@@ -157,7 +161,7 @@ class Pool(object):
             LOGGER.warning('Race condition found when adding new connection')
             try:
                 connection.close()
-            except psycopg2.Error as error:
+            except (psycopg2.Error, psycopg2.Warning) as error:
                 LOGGER.error('Error closing the conn that cant be used: %s',
                              error)
             raise PoolFullError(self)

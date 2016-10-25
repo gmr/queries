@@ -424,7 +424,11 @@ class TornadoSession(session.Session):
 
         """
         LOGGER.debug('Closing cursor and cleaning %s', fd)
-        cursor.close()
+        try:
+            cursor.close()
+        except (psycopg2.Error, psycopg2.Warning) as error:
+            LOGGER.debug('Error closing the cursor: %s', error)
+
         self._pool_manager.free(self.pid, self._connections[fd])
         self._ioloop.remove_handler(fd)
 
@@ -454,7 +458,7 @@ class TornadoSession(session.Session):
         """
         try:
             state = self._connections[fd].poll()
-        except OSError as error:
+        except (OSError, socket.error) as error:
             self._ioloop.remove_handler(fd)
             if fd in self._futures and not self._futures[fd].done():
                 self._futures[fd].set_exception(
