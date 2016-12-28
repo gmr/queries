@@ -1,5 +1,7 @@
 Version History
 ===============
+- Next Release
+  - Log a warning when a tornado_session.Result is ``__del__'d`` without ``free`` being called.
 - 1.9.1 2016-10-25
   - Add better exception handling around connections and getting the logged in user
 - 1.9.0 2016-07-01

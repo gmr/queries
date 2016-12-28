@@ -107,6 +107,7 @@ class Results(results.Results):
         self.cursor = cursor
         self._cleanup = cleanup
         self._fd = fd
+        self._freed = False
 
     @gen.coroutine
     def free(self):
@@ -118,7 +119,12 @@ class Results(results.Results):
         requests.
 
         """
+        self._freed = True
         self._cleanup(self.cursor, self._fd)
+
+    def __del__(self):
+        if not self._freed:
+            LOGGER.warning('%s not freed - %r', self.__class__.__name__, self)
 
 
 class TornadoSession(session.Session):
