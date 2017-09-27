@@ -47,11 +47,11 @@ class SessionInitTests(unittest.TestCase):
     def setUp(self):
         self.obj = tornado_session.TornadoSession()
 
-    #def test_creates_empty_callback_dict(self):
-    #    self.assertDictEqual(self.obj._futures, {})
+    def test_creates_empty_callback_dict(self):
+        self.assertDictEqual(self.obj._futures, {})
 
-   # def test_creates_empty_connections_dict(self):
-   #     self.assertDictEqual(self.obj._connections, {})
+    def test_creates_empty_connections_dict(self):
+        self.assertDictEqual(self.obj._connections, {})
 
     def test_sets_default_cursor_factory(self):
         self.assertEqual(self.obj._cursor_factory, extras.RealDictCursor)
@@ -105,8 +105,8 @@ class SessionConnectTests(testing.AsyncTestCase):
         conn = yield self.obj._connect()
         self.obj._pool_manager.add(self.obj.pid, conn)
         with mock.patch.object(self.obj._pool_manager, 'get') as get:
-            with mock.patch.object(self.io_loop, 'add_handler') as add_handler:
-                second_result = yield self.obj._connect()
+            with mock.patch.object(self.io_loop, 'add_handler'):
+                yield self.obj._connect()
                 get.assert_called_once_with(self.obj.pid, self.obj)
 
     @testing.gen_test
@@ -116,7 +116,7 @@ class SessionConnectTests(testing.AsyncTestCase):
         with mock.patch.object(self.obj._pool_manager, 'get') as get:
             get.return_value = self.conn
             with mock.patch.object(self.io_loop, 'add_handler') as add_handler:
-                second_result = yield self.obj._connect()
+                yield self.obj._connect()
                 add_handler.assert_called_once_with(self.conn.fileno(),
                                                     self.obj._on_io_events,
                                                     ioloop.IOLoop.WRITE)
@@ -232,5 +232,5 @@ class SessionPublicMethodTests(testing.AsyncTestCase):
                 future.set_result(connection)
                 _connect.return_value = future
                 obj = tornado_session.TornadoSession(io_loop=self.io_loop)
-                result = yield obj.validate()
+                yield obj.validate()
                 _connect.assert_called_once_with()
