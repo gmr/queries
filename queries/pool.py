@@ -132,11 +132,13 @@ class Pool(object):
     def __init__(self,
                  pool_id,
                  idle_ttl=DEFAULT_IDLE_TTL,
-                 max_size=DEFAULT_MAX_SIZE):
+                 max_size=DEFAULT_MAX_SIZE,
+                 time_method=None):
         self.connections = {}
         self._id = pool_id
         self.idle_ttl = idle_ttl
         self.max_size = max_size
+        self.time_method = time_method or time.time
 
     def __contains__(self, connection):
         """Return True if the pool contains the connection"""
@@ -207,7 +209,7 @@ class Pool(object):
 
         if self.idle_connections == list(self.connections.values()):
             with self._lock:
-                self.idle_start = time.time()
+                self.idle_start = self.time_method()
         LOGGER.debug('Pool %s freed connection %s', self.id, id(connection))
 
     def get(self, session):
@@ -258,7 +260,7 @@ class Pool(object):
         """
         if self.idle_start is None:
             return 0
-        return time.time() - self.idle_start
+        return self.time_method() - self.idle_start
 
     @property
     def is_full(self):
@@ -375,6 +377,8 @@ class PoolManager(object):
         """Only allow a single PoolManager instance to exist, returning the
         handle for it.
 
+        :param callable time_method: Override the default :py:meth`time.time`
+            method for time calculations. Only applied on first invocation.
         :rtype: PoolManager
 
         """
@@ -407,13 +411,11 @@ class PoolManager(object):
         with cls._lock:
             cls._ensure_pool_exists(pid)
             cls._pools[pid].clean()
-
-            # If the pool has no open connections, remove it
-            if not len(cls._pools[pid]):
-                del cls._pools[pid]
+            cls._maybe_remove_pool(pid)
 
     @classmethod
-    def create(cls, pid, idle_ttl=DEFAULT_IDLE_TTL, max_size=DEFAULT_MAX_SIZE):
+    def create(cls, pid, idle_ttl=DEFAULT_IDLE_TTL, max_size=DEFAULT_MAX_SIZE,
+               time_method=None):
         """Create a new pool, with the ability to pass in values to override
         the default idle TTL and the default maximum size.
 
@@ -426,6 +428,8 @@ class PoolManager(object):
         :param str pid: The pool ID
         :param int idle_ttl: Time in seconds for the idle TTL
         :param int max_size: The maximum pool size
+        :param callable time_method: Override the use of :py:meth:`time.time`
+            method for time values.
         :raises: KeyError
 
         """
@@ -433,7 +437,7 @@ class PoolManager(object):
             raise KeyError('Pool %s already exists' % pid)
         with cls._lock:
             LOGGER.debug("Creating Pool: %s (%i/%i)", pid, idle_ttl, max_size)
-            cls._pools[pid] = Pool(pid, idle_ttl, max_size)
+            cls._pools[pid] = Pool(pid, idle_ttl, max_size, time_method)
 
     @classmethod
     def get(cls, pid, session):
@@ -594,6 +598,16 @@ class PoolManager(object):
         """
         if pid not in cls._pools:
             raise KeyError('Pool %s has not been created' % pid)
+
+    @classmethod
+    def _maybe_remove_pool(cls, pid):
+        """If the pool has no open connections, remove it
+
+        :param str pid: The pool id to clean
+
+        """
+        if not len(cls._pools[pid]):
+            del cls._pools[pid]
 
 
 class QueriesException(Exception):
