@@ -109,7 +109,6 @@ class Results(results.Results):
         self._fd = fd
         self._freed = False
 
-    @gen.coroutine
     def free(self):
         """Release the results and connection lock from the TornadoSession
         object. This **must** be called after you finish processing the results
@@ -124,7 +123,8 @@ class Results(results.Results):
 
     def __del__(self):
         if not self._freed:
-            LOGGER.warning('%s not freed - %r', self.__class__.__name__, self)
+            LOGGER.warning('Auto-freeing result on deletion')
+            self.free()
 
 
 class TornadoSession(session.Session):
@@ -162,15 +162,18 @@ class TornadoSession(session.Session):
         """
         self._connections = dict()
         self._futures = dict()
+        self._cleanup_callback = None
+        self._pool_idle_ttl = pool_idle_ttl
 
         self._cursor_factory = cursor_factory
-        self._ioloop = io_loop or ioloop.IOLoop.instance()
+        self._ioloop = io_loop or ioloop.IOLoop.current()
         self._pool_manager = pool.PoolManager.instance()
         self._uri = uri
 
         # Ensure the pool exists in the pool manager
         if self.pid not in self._pool_manager:
-            self._pool_manager.create(self.pid, pool_idle_ttl, pool_max_size)
+            self._pool_manager.create(self.pid, pool_idle_ttl, pool_max_size,
+                                      self._ioloop.time)
 
     @property
     def connection(self):
@@ -437,6 +440,14 @@ class TornadoSession(session.Session):
 
         self._pool_manager.free(self.pid, self._connections[fd])
         self._ioloop.remove_handler(fd)
+
+        # If the cleanup callback exists, remove it
+        if self._cleanup_callback:
+            self._ioloop.remove_timeout(self._cleanup_callback)
+
+        # Create a new cleanup callback to clean the pool of idle connections
+        self._cleanup_callback = self._ioloop.add_timeout(
+            self._pool_idle_ttl + 1, self._pool_manager.clean, self.pid)
 
         if fd in self._connections:
             del self._connections[fd]
