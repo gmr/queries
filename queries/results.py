@@ -92,7 +92,7 @@ class Results(object):
         connections.
 
         """
-        raise NotImplementedError
+        LOGGER.debug('Invoking synchronous free has no effect')
 
     def items(self):
         """Return all of the rows that are in the result set.
