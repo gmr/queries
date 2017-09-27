@@ -30,14 +30,9 @@ import psycopg2
 from psycopg2 import extensions
 from psycopg2 import extras
 
-from queries import pool
-from queries import results
-from queries import utils
+from queries import pool, results, utils, DEFAULT_URI, PYPY
 
 LOGGER = logging.getLogger(__name__)
-
-from queries import DEFAULT_URI
-from queries import PYPY
 
 DEFAULT_ENCODING = 'UTF8'
 
