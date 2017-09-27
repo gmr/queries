@@ -1,7 +1,9 @@
 Version History
 ===============
 - Next Release
-  - Log a warning when a tornado_session.Result is ``__del__'d`` without ``free`` being called.
+  - Free when tornado_session.Result is ``__del__'d`` without ``free`` being called.
+  - Auto-clean the pool after Results.free TTL+1 in tornado_session.TornadoSession
+  - Dont raise NotImplementedError in Results.free for synchronous use, just treat as a noop
 - 1.9.1 2016-10-25
   - Add better exception handling around connections and getting the logged in user
 - 1.9.0 2016-07-01
