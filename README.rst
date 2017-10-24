@@ -21,7 +21,7 @@ Key features include:
 - Ability to directly access psycopg2 ``connection`` and ``cursor`` objects
 - Internal connection pooling
 
-|Version| |Downloads| |Status| |Coverage| |CodeClimate| |License| |PythonVersions|
+|Version| |Status| |Coverage| |CodeClimate| |License| |PythonVersions|
 
 Documentation
 -------------
@@ -178,9 +178,6 @@ main GitHub repository of Queries as tags prior to version 1.2.0.
 
 .. |Coverage| image:: https://img.shields.io/codecov/c/github/gmr/queries.svg?
    :target: https://codecov.io/github/gmr/queries?branch=master
-
-.. |Downloads| image:: https://img.shields.io/pypi/dm/queries.svg?
-   :target: https://pypi.python.org/pypi/queries
 
 .. |License| image:: https://img.shields.io/github/license/gmr/queries.svg?
    :target: https://github.com/gmr/queries
