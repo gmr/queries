@@ -447,7 +447,8 @@ class TornadoSession(session.Session):
 
         # Create a new cleanup callback to clean the pool of idle connections
         self._cleanup_callback = self._ioloop.add_timeout(
-            self._pool_idle_ttl + 1, self._pool_manager.clean, self.pid)
+            self._ioloop.time() + self._pool_idle_ttl + 1,
+            self._pool_manager.clean, self.pid)
 
         if fd in self._connections:
             del self._connections[fd]
