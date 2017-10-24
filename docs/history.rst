@@ -1,8 +1,8 @@
 Version History
 ===============
-- Next Release
+- 1.10.1 2017-10-24
   - Use an absolute time in the call to ``add_timeout``
-- 1.10.0 2016-09-27
+- 1.10.0 2017-09-27
   - Free when tornado_session.Result is ``__del__'d`` without ``free`` being called.
   - Auto-clean the pool after Results.free TTL+1 in tornado_session.TornadoSession
   - Dont raise NotImplementedError in Results.free for synchronous use, just treat as a noop
