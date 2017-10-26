@@ -377,8 +377,6 @@ class PoolManager(object):
         """Only allow a single PoolManager instance to exist, returning the
         handle for it.
 
-        :param callable time_method: Override the default :py:meth`time.time`
-            method for time calculations. Only applied on first invocation.
         :rtype: PoolManager
 
         """
@@ -411,7 +409,6 @@ class PoolManager(object):
         with cls._lock:
             cls._ensure_pool_exists(pid)
             cls._pools[pid].clean()
-            cls._maybe_remove_pool(pid)
 
     @classmethod
     def create(cls, pid, idle_ttl=DEFAULT_IDLE_TTL, max_size=DEFAULT_MAX_SIZE,
