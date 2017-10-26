@@ -169,6 +169,7 @@ class TornadoSession(session.Session):
         self._pool_max_size = pool_max_size
         self._pool_idle_ttl = pool_idle_ttl
         self._uri = uri
+        self._ensure_pool_exists()
 
     def _ensure_pool_exists(self):
         """Create the pool in the pool manager if it does not exist."""
