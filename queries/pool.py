@@ -409,6 +409,7 @@ class PoolManager(object):
         with cls._lock:
             cls._ensure_pool_exists(pid)
             cls._pools[pid].clean()
+            cls._maybe_remove_pool(pid)
 
     @classmethod
     def create(cls, pid, idle_ttl=DEFAULT_IDLE_TTL, max_size=DEFAULT_MAX_SIZE,

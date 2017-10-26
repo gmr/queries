@@ -1,7 +1,7 @@
 Version History
 ===============
 - 1.10.2 2017-10-26
-  - Don't remove a pool from the pool manger when cleaning.
+  - Ensure the pool exists when executing a query in TornadoSession, the new timeout behavior prevented that from happening.
 - 1.10.1 2017-10-24
   - Use an absolute time in the call to ``add_timeout``
 - 1.10.0 2017-09-27

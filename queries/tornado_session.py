@@ -161,19 +161,20 @@ class TornadoSession(session.Session):
 
         """
         self._connections = dict()
-        self._futures = dict()
         self._cleanup_callback = None
-        self._pool_idle_ttl = pool_idle_ttl
-
         self._cursor_factory = cursor_factory
+        self._futures = dict()
         self._ioloop = io_loop or ioloop.IOLoop.current()
         self._pool_manager = pool.PoolManager.instance()
+        self._pool_max_size = pool_max_size
+        self._pool_idle_ttl = pool_idle_ttl
         self._uri = uri
 
-        # Ensure the pool exists in the pool manager
+    def _ensure_pool_exists(self):
+        """Create the pool in the pool manager if it does not exist."""
         if self.pid not in self._pool_manager:
-            self._pool_manager.create(self.pid, pool_idle_ttl, pool_max_size,
-                                      self._ioloop.time)
+            self._pool_manager.create(self.pid, self._pool_idle_ttl,
+                                      self._pool_max_size, self._ioloop.time)
 
     @property
     def connection(self):
@@ -417,6 +418,9 @@ class TornadoSession(session.Session):
             # Get the cursor, execute the query
             func = getattr(cursor, method)
             func(query, parameters)
+
+        # Ensure the pool exists for the connection
+        self._ensure_pool_exists()
 
         # Grab a connection to PostgreSQL
         self._ioloop.add_future(self._connect(), on_connected)
