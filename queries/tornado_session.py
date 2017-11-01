@@ -25,19 +25,14 @@ Example Use:
 import logging
 import socket
 
-from psycopg2 import extensions
-from psycopg2 import extras
-
-from tornado import concurrent
-from tornado import gen
-from tornado import ioloop
 import psycopg2
+from psycopg2 import extras, extensions
+from tornado import concurrent, ioloop
 
 from queries import pool
 from queries import results
 from queries import session
 from queries import utils
-
 from queries import DEFAULT_URI
 from queries import PYPY
 
@@ -239,38 +234,17 @@ class TornadoSession(session.Session):
 
     def validate(self):
         """Validate the session can connect or has open connections to
-        PostgreSQL
+        PostgreSQL. As of ``1.10.3``
+
+        .. deprecated:: 1.10.3
+           As of 1.10.3, this method only raises a
+           :py:exception:`DeprecationWarning`.
 
         :rtype: bool
+        :raises: DeprecationWarning
 
         """
-        future = concurrent.TracebackFuture()
-
-        def on_connected(cf):
-            if cf.exception():
-                future.set_exception(cf.exception())
-                return
-
-            connection = cf.result()
-            fd = connection.fileno()
-
-            # The connection would have been added to the pool manager, free it
-            self._pool_manager.free(self.pid, connection)
-            self._ioloop.remove_handler(fd)
-
-            if fd in self._connections:
-                del self._connections[fd]
-            if fd in self._futures:
-                del self._futures[fd]
-
-            # Return the success in validating the connection
-            future.set_result(True)
-
-        # Grab a connection to PostgreSQL
-        self._ioloop.add_future(self._connect(), on_connected)
-
-        # Return the future for the query result
-        return future
+        raise DeprecationWarning('All functionality removed from this method')
 
     def _connect(self):
         """Connect to PostgreSQL, either by reusing a connection from the pool
@@ -460,11 +434,11 @@ class TornadoSession(session.Session):
         if fd in self._futures:
             del self._futures[fd]
 
-    def _on_io_events(self, fd=None, events=None):
+    def _on_io_events(self, fd=None, _events=None):
         """Invoked by Tornado's IOLoop when there are events for the fd
 
         :param int fd: The file descriptor for the event
-        :param int events: The events raised
+        :param int _events: The events raised
 
         """
         if fd not in self._connections:
