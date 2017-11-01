@@ -407,7 +407,11 @@ class PoolManager(object):
 
         """
         with cls._lock:
-            cls._ensure_pool_exists(pid)
+            try:
+                cls._ensure_pool_exists(pid)
+            except KeyError:
+                LOGGER.debug('Pool clean invoked against missing pool %s', pid)
+                return
             cls._pools[pid].clean()
             cls._maybe_remove_pool(pid)
 
