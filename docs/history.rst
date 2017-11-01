@@ -1,5 +1,8 @@
 Version History
 ===============
+- 1.10.3 2017-11-01
+  - Remove the functionality from ``TornadoSession.validate`` and make it raise a ``DeprecationWarning``
+  - Catch the ``KeyError`` raised when ``PoolManager.clean()`` is invoked for a pool that doesn't exist
 - 1.10.2 2017-10-26
   - Ensure the pool exists when executing a query in TornadoSession, the new timeout behavior prevented that from happening.
 - 1.10.1 2017-10-24
