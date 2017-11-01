@@ -51,9 +51,13 @@ class ManagerTests(unittest.TestCase):
         psycopg2_conn = mock.Mock()
         self.assertRaises(KeyError, self.manager.add, pid, psycopg2_conn)
 
-    def test_clean_ensures_pool_exists(self):
+    def test_ensures_pool_exists_raises_key_error(self):
         pid = str(uuid.uuid4())
-        self.assertRaises(KeyError, self.manager.clean, pid)
+        self.assertRaises(KeyError, self.manager._ensure_pool_exists, pid)
+
+    def test_clean_ensures_pool_exists_catches_key_error(self):
+        pid = str(uuid.uuid4())
+        self.assertIsNone(self.manager.clean(pid))
 
     def test_clean_invokes_pool_clean(self):
         pid = str(uuid.uuid4())
