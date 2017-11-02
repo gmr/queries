@@ -220,17 +220,3 @@ class SessionPublicMethodTests(testing.AsyncTestCase):
             obj = tornado_session.TornadoSession(io_loop=self.io_loop)
             result = yield obj.query('SELECT 1')
             _execute.assert_called_once_with('execute', 'SELECT 1', None)
-
-    @testing.gen_test
-    def test_validate_invokes_connect(self):
-        with mock.patch('queries.tornado_session.TornadoSession._connect') as \
-                _connect:
-            with mock.patch('queries.pool.PoolManager.free'):
-                future = concurrent.Future()
-                connection = mock.Mock()
-                connection.fileno = mock.Mock(return_value=10)
-                future.set_result(connection)
-                _connect.return_value = future
-                obj = tornado_session.TornadoSession(io_loop=self.io_loop)
-                yield obj.validate()
-                _connect.assert_called_once_with()
