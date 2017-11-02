@@ -24,6 +24,7 @@ Example Use:
 """
 import logging
 import socket
+import warnings
 
 import psycopg2
 from psycopg2 import extras, extensions
@@ -237,14 +238,13 @@ class TornadoSession(session.Session):
         PostgreSQL. As of ``1.10.3``
 
         .. deprecated:: 1.10.3
-           As of 1.10.3, this method only raises a
-           :py:exception:`DeprecationWarning`.
+           As of 1.10.3, this method only warns about Deprecation
 
         :rtype: bool
-        :raises: DeprecationWarning
 
         """
-        raise DeprecationWarning('All functionality removed from this method')
+        warnings.warn(
+            'All functionality removed from this method', DeprecationWarning)
 
     def _connect(self):
         """Connect to PostgreSQL, either by reusing a connection from the pool
