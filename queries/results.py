@@ -59,6 +59,9 @@ class Results(object):
     def __nonzero__(self):
         return bool(self.cursor.rowcount)
 
+    def __bool__(self):
+        return self.__nonzero__()
+
     def __repr__(self):
         return '<queries.%s rows=%s>' % (self.__class__.__name__, len(self))
 
