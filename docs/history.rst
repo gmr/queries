@@ -1,5 +1,7 @@
 Version History
 ===============
+- Next Release
+  - Implement ``Results.__bool__`` to be explicit about Python 3 support.
 - 1.10.3 2017-11-01
   - Remove the functionality from ``TornadoSession.validate`` and make it raise a ``DeprecationWarning``
   - Catch the ``KeyError`` raised when ``PoolManager.clean()`` is invoked for a pool that doesn't exist
