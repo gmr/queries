@@ -224,11 +224,11 @@ class SessionPublicMethodTests(testing.AsyncTestCase):
     @testing.gen_test
     def test_query_error_key_error(self):
         obj = tornado_session.TornadoSession(io_loop=self.io_loop)
-        with self.assertRaises(KeyError):
+        with self.assertRaises(Exception):
             yield obj.query('SELECT * FROM foo WHERE bar=%(baz)s', {})
 
     @testing.gen_test
     def test_query_error_index_error(self):
         obj = tornado_session.TornadoSession(io_loop=self.io_loop)
-        with self.assertRaises(IndexError):
+        with self.assertRaises(Exception):
             yield obj.query('SELECT * FROM foo WHERE bar=%s', [])
