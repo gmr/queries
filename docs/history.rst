@@ -1,7 +1,9 @@
 Version History
 ===============
-- Next Release
+- 1.10.4 2018-01-10
   - Implement ``Results.__bool__`` to be explicit about Python 3 support.
+  - Catch any exception raised when using TornadoSession and invoking the execute function in psycopg2 for exceptions raised prior to sending the query to Postgres.
+    This could be psycopg2.Error, IndexError, KeyError, or who knows, it's not documented in psycopg2.
 - 1.10.3 2017-11-01
   - Remove the functionality from ``TornadoSession.validate`` and make it raise a ``DeprecationWarning``
   - Catch the ``KeyError`` raised when ``PoolManager.clean()`` is invoked for a pool that doesn't exist
