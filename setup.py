@@ -28,7 +28,7 @@ classifiers = ['Development Status :: 5 - Production/Stable',
                'Topic :: Software Development :: Libraries']
 
 setup(name='queries',
-      version='1.10.3',
+      version='1.10.4',
       description="Simplified PostgreSQL client built upon Psycopg2",
       maintainer="Gavin M. Roy",
       maintainer_email="gavinmroy@gmail.com",

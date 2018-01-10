@@ -392,7 +392,10 @@ class TornadoSession(session.Session):
 
             # Get the cursor, execute the query
             func = getattr(cursor, method)
-            func(query, parameters)
+            try:
+                func(query, parameters)
+            except Exception as error:
+                future.set_exception(error)
 
         # Ensure the pool exists for the connection
         self._ensure_pool_exists()

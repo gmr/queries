@@ -207,7 +207,7 @@ class SessionPublicMethodTests(testing.AsyncTestCase):
             future.set_result(True)
             _execute.return_value = future
             obj = tornado_session.TornadoSession(io_loop=self.io_loop)
-            result = yield obj.callproc('foo', ['bar'])
+            yield obj.callproc('foo', ['bar'])
             _execute.assert_called_once_with('callproc', 'foo', ['bar'])
 
     @testing.gen_test
@@ -218,5 +218,17 @@ class SessionPublicMethodTests(testing.AsyncTestCase):
             future.set_result(True)
             _execute.return_value = future
             obj = tornado_session.TornadoSession(io_loop=self.io_loop)
-            result = yield obj.query('SELECT 1')
+            yield obj.query('SELECT 1')
             _execute.assert_called_once_with('execute', 'SELECT 1', None)
+
+    @testing.gen_test
+    def test_query_error_key_error(self):
+        obj = tornado_session.TornadoSession(io_loop=self.io_loop)
+        with self.assertRaises(KeyError):
+            yield obj.query('SELECT * FROM foo WHERE bar=%(baz)s', {})
+
+    @testing.gen_test
+    def test_query_error_index_error(self):
+        obj = tornado_session.TornadoSession(io_loop=self.io_loop)
+        with self.assertRaises(IndexError):
+            yield obj.query('SELECT * FROM foo WHERE bar=%s', [])
