@@ -158,6 +158,7 @@ class TornadoSession(session.Session):
         """
         self._connections = dict()
         self._cleanup_callback = None
+        self._connecting = dict()
         self._cursor_factory = cursor_factory
         self._futures = dict()
         self._ioloop = io_loop or ioloop.IOLoop.current()
@@ -291,6 +292,7 @@ class TornadoSession(session.Session):
         # Add the connection for use in _poll_connection
         fd = connection.fileno()
         self._connections[fd] = connection
+        self._connecting[fd] = True
 
         def on_connected(cf):
             """Invoked by the IOLoop when the future is complete for the
@@ -303,7 +305,7 @@ class TornadoSession(session.Session):
                 future.set_exception(cf.exception())
 
             else:
-
+                self._connecting[fd] = False
                 try:
                     # Add the connection to the pool
                     LOGGER.debug('Connection established for %s', self.pid)
@@ -434,6 +436,8 @@ class TornadoSession(session.Session):
 
         if fd in self._connections:
             del self._connections[fd]
+        if fd in self._connecting:
+            del self._connecting[fd]
         if fd in self._futures:
             del self._futures[fd]
 
@@ -464,6 +468,18 @@ class TornadoSession(session.Session):
                 self._futures[fd].set_exception(
                     psycopg2.OperationalError('Connection error (%s)' % error)
                 )
+        except psycopg2.OperationalError as error:
+            if fd in self._futures and not self._futures[fd].done():
+                    self._futures[fd].set_exception(error)
+            if fd in self._connecting and self._connecting[fd]:
+                LOGGER.debug('OperationalError %s while connecting fd %s',
+                             error, fd)
+                self._ioloop.remove_handler(fd)
+                self._connections[fd].close()
+                del self._connections[fd]
+                del self._connecting[fd]
+                if fd in self._futures:
+                    del self._futures[fd]
         except (psycopg2.Error, psycopg2.Warning) as error:
             if fd in self._futures and not self._futures[fd].done():
                 self._futures[fd].set_exception(error)
