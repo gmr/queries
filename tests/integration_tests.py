@@ -125,3 +125,11 @@ class TornadoSessionIntegrationTests(testing.AsyncTestCase):
             yield session.query('SELECT 1')
         yield gen.sleep(0.05)
         self.assertLess(self.count, 20)
+
+    @testing.gen_test
+    def test_invalid_query(self):
+        try:
+            with self.assertRaises(queries.ProgrammingError):
+                yield self.session.query('INVALID QUERY')
+        except queries.OperationalError:
+            raise unittest.SkipTest('PostgreSQL is not running')
