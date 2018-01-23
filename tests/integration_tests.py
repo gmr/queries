@@ -104,7 +104,8 @@ class TornadoSessionIntegrationTests(testing.AsyncTestCase):
         # Abort the test right away if postgres isn't running.
         good_uri = queries.uri('localhost', 5432, 'postgres', 'postgres')
         try:
-            self.session = queries.Session(good_uri, pool_max_size=10)
+            test_session = queries.Session(good_uri, pool_max_size=10)
+            test_session.close()
         except queries.OperationalError as error:
             raise unittest.SkipTest(str(error).split('\n')[0])
 
