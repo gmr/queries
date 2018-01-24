@@ -14,7 +14,7 @@ both fast and easy.
 *Key features include*:
 
 - Simplified API
-- Support of Python 2.6+ and 3.3+
+- Support of Python 2.7+ and 3.4+
 - PyPy support via psycopg2cffi_
 - Asynchronous support for Tornado_
 - Connection information provided by URI
@@ -77,9 +77,6 @@ Indices and tables
 .. _psycopg2cffi: https://pypi.python.org/pypi/psycopg2cffi
 
 .. |Version| image:: https://img.shields.io/pypi/v/queries.svg?
-   :target: https://pypi.python.org/pypi/queries
-
-.. |Downloads| image:: https://img.shields.io/pypi/dm/queries.svg?
    :target: https://pypi.python.org/pypi/queries
 
 .. |License| image:: https://img.shields.io/github/license/gmr/queries.svg?
