@@ -31,7 +31,6 @@ from psycopg2 import extras, extensions
 import psycopg2
 
 from queries import pool, results, session, utils
-from queries.utils import DEFAULT_URI, PYPY
 
 LOGGER = logging.getLogger(__name__)
 
@@ -137,7 +136,7 @@ class TornadoSession(session.Session):
     :param int pool_max_size: The maximum size of the pool to use
 
     """
-    def __init__(self, uri=DEFAULT_URI,
+    def __init__(self, uri=session.DEFAULT_URI,
                  cursor_factory=extras.RealDictCursor,
                  pool_idle_ttl=pool.DEFAULT_IDLE_TTL,
                  pool_max_size=DEFAULT_MAX_POOL_SIZE,
@@ -317,7 +316,7 @@ class TornadoSession(session.Session):
                 # connection in a weird state: consts.STATUS_DATESTYLE,
                 # returning from Connection._setup without setting the state
                 # as const.STATUS_OK
-                if PYPY:
+                if utils.PYPY:
                     connection.status = extensions.STATUS_READY
 
                 # Register the custom data types

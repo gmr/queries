@@ -30,11 +30,11 @@ import psycopg2
 from psycopg2 import extensions, extras
 
 from queries import pool, results, utils
-from queries.utils import DEFAULT_URI, PYPY
 
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_ENCODING = 'UTF8'
+DEFAULT_URI = 'postgresql://localhost:5432'
 
 
 class Session(object):
@@ -297,7 +297,7 @@ class Session(object):
             # Added in because psycopg2ct connects and leaves the connection in
             # a weird state: consts.STATUS_DATESTYLE, returning from
             # Connection._setup without setting the state as const.STATUS_OK
-            if PYPY:
+            if utils.PYPY:
                 connection.reset()
 
             # Register the custom data types

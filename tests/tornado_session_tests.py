@@ -56,7 +56,7 @@ class SessionInitTests(unittest.TestCase):
         self.assertEqual(self.obj._pool_manager, pool.PoolManager.instance())
 
     def test_sets_uri(self):
-        self.assertEqual(self.obj._uri, tornado_session.DEFAULT_URI)
+        self.assertEqual(self.obj._uri, tornado_session.session.DEFAULT_URI)
 
     def test_creates_pool_in_manager(self):
         self.assertIn(self.obj.pid, self.obj._pool_manager._pools)

@@ -26,8 +26,6 @@ except ImportError:
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_URI = 'postgresql://localhost:5432'
-
 PARSED = collections.namedtuple('Parsed',
                                 'scheme,netloc,path,params,query,fragment,'
                                 'username,password,hostname,port')

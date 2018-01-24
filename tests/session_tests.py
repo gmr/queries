@@ -4,10 +4,11 @@ Tests for functionality in the session module
 """
 import hashlib
 import mock
+import platform
 import unittest
 
 # Out of order import to ensure psycopg2cffi is registered
-from queries import pool, results, session, PYPY
+from queries import pool, results, session, utils
 
 from psycopg2 import extras
 import psycopg2
@@ -135,7 +136,8 @@ class SessionTestCase(unittest.TestCase):
         self.obj.set_encoding('UTF-8')
         self.assertFalse(set_client_encoding.called)
 
-    @unittest.skipIf(PYPY, 'PYPY does not invoke object.__del__ synchronously')
+    @unittest.skipIf(utils.PYPY,
+                     'PYPY does not invoke object.__del__ synchronously')
     def test_del_invokes_cleanup(self):
         cleanup = mock.Mock()
         with mock.patch.multiple('queries.session.Session',
@@ -219,6 +221,6 @@ class SessionTestCase(unittest.TestCase):
         result = self.obj._get_cursor(self.obj._conn, 'test2')
         self.assertTrue(result.withhhold)
 
-    @unittest.skipUnless(PYPY, 'connection.reset is PYPY only behavior')
+    @unittest.skipUnless(utils.PYPY, 'connection.reset is PYPY only behavior')
     def test_connection_reset_in_pypy(self):
         self.conn.reset.assert_called_once_with()

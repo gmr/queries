@@ -28,10 +28,7 @@ try:
     from queries.tornado_session import TornadoSession
 except ImportError:  # pragma: nocover
     TornadoSession = None
-from queries.utils import uri, PYPY
-
-__version__ = '2.0.0'
-version = __version__
+from queries.utils import uri
 
 # For ease of access to different cursor types
 from psycopg2.extras import DictCursor
@@ -53,6 +50,9 @@ from psycopg2 import OperationalError
 from psycopg2 import ProgrammingError
 from psycopg2.extensions import QueryCanceledError
 from psycopg2.extensions import TransactionRollbackError
+
+__version__ = '2.0.0'
+version = __version__
 
 # Add a Null logging handler to prevent logging output when un-configured
 logging.getLogger('queries').addHandler(logging.NullHandler())
