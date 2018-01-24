@@ -18,6 +18,7 @@ env:
 install:
  - pip install awscli
  - pip install -r requires/testing.txt
+ - python setup.py develop
 
 stages:
  - test
