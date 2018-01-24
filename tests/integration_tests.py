@@ -1,19 +1,25 @@
 import datetime
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import os
+import unittest
+
+from tornado import gen, testing
 
 import queries
-from tornado import testing
 
 
-class SessionIntegrationTests(unittest.TestCase):
+class URIMixin(object):
+
+    @property
+    def pg_uri(self):
+        return queries.uri(os.getenv('PGHOST', 'localhost'),
+                           int(os.getenv('PGPORT', '5432')), 'postgres')
+
+
+class SessionIntegrationTests(URIMixin, unittest.TestCase):
 
     def setUp(self):
-        uri = queries.uri('localhost', 5432, 'postgres', 'postgres')
         try:
-            self.session = queries.Session(uri, pool_max_size=10)
+            self.session = queries.Session(self.pg_uri, pool_max_size=10)
         except queries.OperationalError as error:
             raise unittest.SkipTest(str(error).split('\n')[0])
 
@@ -40,25 +46,27 @@ class SessionIntegrationTests(unittest.TestCase):
         self.assertEqual(6 % 4, result[0]['mod'])
 
 
-class TornadoSessionIntegrationTests(testing.AsyncTestCase):
+class TornadoSessionIntegrationTests(URIMixin, testing.AsyncTestCase):
 
     def setUp(self):
         super(TornadoSessionIntegrationTests, self).setUp()
-        self.session = queries.TornadoSession(queries.uri('localhost',
-                                                          5432,
-                                                          'postgres',
-                                                          'postgres'),
+        self.session = queries.TornadoSession(self.pg_uri,
                                               pool_max_size=10,
                                               io_loop=self.io_loop)
 
-    @testing.gen_test
-    def test_query_returns_results_object(self):
+    @gen.coroutine
+    def assertPostgresConnected(self):
         try:
             result = yield self.session.query('SELECT 1 AS value')
         except queries.OperationalError:
             raise unittest.SkipTest('PostgreSQL is not running')
         self.assertIsInstance(result, queries.Results)
+        self.assertEqual(len(result), 1)
         result.free()
+
+    @testing.gen_test
+    def test_successful_connection_and_query(self):
+        yield self.assertPostgresConnected()
 
     @testing.gen_test
     def test_query_result_value(self):
@@ -72,7 +80,7 @@ class TornadoSessionIntegrationTests(testing.AsyncTestCase):
     @testing.gen_test
     def test_query_multirow_result_has_at_least_three_rows(self):
         try:
-            result = yield self.session.query('SELECT * FROM pg_stat_database')
+            result = yield self.session.query('SELECT * FROM pg_class')
         except queries.OperationalError:
             raise unittest.SkipTest('PostgreSQL is not running')
         self.assertGreaterEqual(result.count(), 3)
