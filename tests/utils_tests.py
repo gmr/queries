@@ -3,8 +3,10 @@ Tests for functionality in the utils module
 
 """
 import mock
+import platform
 import unittest
 
+import queries
 from queries import utils
 
 
@@ -15,6 +17,31 @@ class GetCurrentUserTests(unittest.TestCase):
         """get_current_user returns value from pwd.getpwuid"""
         getpwuid.return_value = ['mocky']
         self.assertEqual(utils.get_current_user(), 'mocky')
+
+
+class PYPYDetectionTests(unittest.TestCase):
+
+    def test_pypy_flag(self):
+        """PYPY flag is set properly"""
+        self.assertEqual(queries.PYPY,
+                         platform.python_implementation() == 'PyPy')
+
+
+class URICreationTests(unittest.TestCase):
+
+    def test_uri_with_password(self):
+        expectation = 'postgresql://foo:bar@baz:5433/qux'
+        self.assertEqual(queries.uri('baz', 5433, 'qux', 'foo', 'bar'),
+                         expectation)
+
+    def test_uri_without_password(self):
+        expectation = 'postgresql://foo@baz:5433/qux'
+        self.assertEqual(queries.uri('baz', 5433, 'qux', 'foo'),
+                         expectation)
+
+    def test_default_uri(self):
+        expectation = 'postgresql://postgres@localhost:5432/postgres'
+        self.assertEqual(queries.uri(), expectation)
 
 
 class URLParseTestCase(unittest.TestCase):
@@ -90,5 +117,3 @@ class URIToKWargsTestCase(unittest.TestCase):
         socket_path = 'postgresql:///postgres?host=/tmp/'
         result = utils.uri_to_kwargs(socket_path)
         self.assertEqual(result['host'], '/tmp/')
-
-

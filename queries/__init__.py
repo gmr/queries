@@ -8,67 +8,30 @@ The core `queries.Queries` class will automatically register support for UUIDs,
 Unicode and Unicode arrays.
 
 """
-__version__ = '2.0.0'
-version = __version__
-
 import logging
-import platform
+import sys
 
-# Import PyPy compatibility
-PYPY = False
-target = platform.python_implementation()
-if target == 'PyPy':  # pragma: no cover
-    import psycopg2cffi.compat
-    psycopg2cffi.compat.register()
-    PYPY = True
-
-# Add a Null logging handler to prevent logging output when un-configured
 try:
-    from logging import NullHandler
-except ImportError:  # pragma: no cover
-    class NullHandler(logging.Handler):
-        """Python 2.6 does not have a NullHandler"""
-        def emit(self, record):
-            """Emit a record
+    import psycopg2cffi
+    import psycopg2cffi.extras
+    import psycopg2cffi.extensions
+except ImportError:
+    pass
+else:
+    sys.modules['psycopg2'] = psycopg2cffi
+    sys.modules['psycopg2.extras'] = psycopg2cffi.extras
+    sys.modules['psycopg2.extensions'] = psycopg2cffi.extensions
 
-            :param record record: The record to emit
-
-            """
-            pass
-
-logging.getLogger('queries').addHandler(NullHandler())
-
-# Defaults
-DEFAULT_URI = 'postgresql://localhost:5432'
-
-# Mappings to queries classes and methods
 from queries.results import Results
 from queries.session import Session
-
 try:
     from queries.tornado_session import TornadoSession
-except ImportError:  # pragma: no cover
+except ImportError:  # pragma: nocover
     TornadoSession = None
+from queries.utils import uri, PYPY
 
-
-def uri(host='localhost', port=5432, dbname='postgres', user='postgres',
-        password=None):
-    """Return a PostgreSQL connection URI for the specified values.
-
-    :param str host: Host to connect to
-    :param int port: Port to connect on
-    :param str dbname: The database name
-    :param str user: User to connect as
-    :param str password: The password to use, None for no password
-    :return str: The PostgreSQL connection URI
-
-    """
-    if port:
-        host = '%s:%s' % (host, port)
-    if password:
-        return 'postgresql://%s:%s@%s/%s' % (user, password, host, dbname)
-    return 'postgresql://%s@%s/%s' % (user, host, dbname)
-
+__version__ = '2.0.0'
+version = __version__
 
 # For ease of access to different cursor types
 from psycopg2.extras import DictCursor
@@ -90,3 +53,6 @@ from psycopg2 import OperationalError
 from psycopg2 import ProgrammingError
 from psycopg2.extensions import QueryCanceledError
 from psycopg2.extensions import TransactionRollbackError
+
+# Add a Null logging handler to prevent logging output when un-configured
+logging.getLogger('queries').addHandler(logging.NullHandler())
