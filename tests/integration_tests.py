@@ -104,3 +104,26 @@ class TornadoSessionIntegrationTests(URIMixin, testing.AsyncTestCase):
             raise unittest.SkipTest('PostgreSQL is not running')
         self.assertEqual(6 % 4, result[0]['mod'])
         result.free()
+
+    @testing.gen_test
+    def test_polling_stops_after_connection_error(self):
+        # Abort the test right away if postgres isn't running.
+        yield self.assertPostgresConnected()
+
+        # Use an invalid user to force an OperationalError during connection
+        bad_uri = queries.uri(os.getenv('PGHOST', 'localhost'),
+                              int(os.getenv('PGPORT', '5432')), 'invalid')
+        session = queries.TornadoSession(bad_uri)
+
+        self.count = 0
+        real_poll_connection = session._poll_connection
+
+        def count_polls(*args, **kwargs):
+            self.count += 1
+            real_poll_connection(*args, **kwargs)
+        session._poll_connection = count_polls
+
+        with self.assertRaises(queries.OperationalError):
+            yield session.query('SELECT 1')
+        yield gen.sleep(0.05)
+        self.assertLess(self.count, 20)
