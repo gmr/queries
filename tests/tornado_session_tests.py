@@ -5,18 +5,11 @@ Tests for functionality in the tornado_session module
 import mock
 import unittest
 
-try:
-    from psycopg2cffi import extras
-except ImportError:
-    from psycopg2 import extras
+# Out of order import to ensure psycopg2cffi is registered
+from queries import pool, tornado_session
 
-from tornado import concurrent
-from tornado import gen
-from tornado import ioloop
-from tornado import testing
-
-from queries import pool
-from queries import tornado_session
+from psycopg2 import extras
+from tornado import concurrent, gen, ioloop, testing
 
 
 class ResultsTests(unittest.TestCase):

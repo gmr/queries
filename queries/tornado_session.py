@@ -26,16 +26,12 @@ import logging
 import socket
 import warnings
 
-import psycopg2
-from psycopg2 import extras, extensions
 from tornado import concurrent, ioloop
+from psycopg2 import extras, extensions
+import psycopg2
 
-from queries import pool
-from queries import results
-from queries import session
-from queries import utils
-from queries import DEFAULT_URI
-from queries import PYPY
+from queries import pool, results, session, utils
+from queries.utils import DEFAULT_URI, PYPY
 
 LOGGER = logging.getLogger(__name__)
 
@@ -317,7 +313,7 @@ class TornadoSession(session.Session):
 
                 self._pool_manager.lock(self.pid, connection, self)
 
-                # Added in because psycopg2ct connects and leaves the
+                # Added in because psycopg2cffi connects and leaves the
                 # connection in a weird state: consts.STATUS_DATESTYLE,
                 # returning from Connection._setup without setting the state
                 # as const.STATUS_OK

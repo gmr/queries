@@ -6,14 +6,11 @@ import hashlib
 import mock
 import unittest
 
+# Out of order import to ensure psycopg2cffi is registered
+from queries import pool, results, session, PYPY
+
 from psycopg2 import extras
 import psycopg2
-
-from queries import pool
-from queries import results
-from queries import session
-
-from queries import PYPY
 
 
 class SessionTestCase(unittest.TestCase):

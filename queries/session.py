@@ -27,10 +27,10 @@ import hashlib
 import logging
 
 import psycopg2
-from psycopg2 import extensions
-from psycopg2 import extras
+from psycopg2 import extensions, extras
 
-from queries import pool, results, utils, DEFAULT_URI, PYPY
+from queries import pool, results, utils
+from queries.utils import DEFAULT_URI, PYPY
 
 LOGGER = logging.getLogger(__name__)
 
