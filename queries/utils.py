@@ -3,16 +3,18 @@ Utility functions for access to OS level info and URI parsing
 
 """
 import collections
+import getpass
 import logging
 import os
+import platform
 
 # All systems do not support pwd module
 try:
     import pwd
 except ImportError:
     pwd = None
-    import getpass
 
+# Python 2 & 3 compatibility
 try:
     from urllib import parse as _urlparse
 except ImportError:
@@ -24,9 +26,13 @@ except ImportError:
 
 LOGGER = logging.getLogger(__name__)
 
+DEFAULT_URI = 'postgresql://localhost:5432'
+
 PARSED = collections.namedtuple('Parsed',
                                 'scheme,netloc,path,params,query,fragment,'
                                 'username,password,hostname,port')
+
+PYPY = platform.python_implementation().lower() == 'pypy'
 
 KEYWORDS = ['connect_timeout',
             'client_encoding',
@@ -75,6 +81,25 @@ def parse_qs(query_string):
     return _urlparse.parse_qs(query_string)
 
 
+def uri(host='localhost', port=5432, dbname='postgres', user='postgres',
+        password=None):
+    """Return a PostgreSQL connection URI for the specified values.
+
+    :param str host: Host to connect to
+    :param int port: Port to connect on
+    :param str dbname: The database name
+    :param str user: User to connect as
+    :param str password: The password to use, None for no password
+    :return str: The PostgreSQL connection URI
+
+     """
+    if port:
+        host = '%s:%s' % (host, port)
+    if password:
+        return 'postgresql://%s:%s@%s/%s' % (user, password, host, dbname)
+    return 'postgresql://%s@%s/%s' % (user, host, dbname)
+
+
 def uri_to_kwargs(uri):
     """Return a URI as kwargs for connecting to PostgreSQL with psycopg2,
     applying default values for non-specified areas of the URI.
@@ -113,13 +138,7 @@ def urlparse(url):
     """
     value = 'http%s' % url[5:] if url[:5] == 'postgresql' else url
     parsed = _urlparse.urlparse(value)
-
-    # Python 2.6 hack
-    if not parsed.query and '?' in parsed.path:
-        path, query = parsed.path.split('?')
-    else:
-        path, query = parsed.path, parsed.query
-
+    path, query = parsed.path, parsed.query
     hostname = parsed.hostname if parsed.hostname else ''
     return PARSED(parsed.scheme.replace('http', 'postgresql'),
                   parsed.netloc,

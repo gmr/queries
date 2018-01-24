@@ -2,7 +2,7 @@ from setuptools import setup
 import os
 import platform
 
-# Include the proper requirements
+# PYPY vs cpython
 if platform.python_implementation() == 'PyPy':
     install_requires = ['psycopg2cffi>=2.7.2,<3']
 else:
