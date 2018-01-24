@@ -3,10 +3,7 @@ Tests for Connection class in the pool module
 
 """
 import mock
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 import weakref
 
 from queries import pool

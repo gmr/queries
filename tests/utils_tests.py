@@ -3,10 +3,7 @@ Tests for functionality in the utils module
 
 """
 import mock
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 
 from queries import utils
 

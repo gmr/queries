@@ -3,10 +3,7 @@ Tests for functionality in the __init__.py module
 
 """
 import platform
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 
 import queries
 

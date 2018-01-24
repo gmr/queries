@@ -4,14 +4,10 @@ Tests for functionality in the pool module
 """
 import mock
 import time
-try:
-    import unittest2 as unittest
-except ImportError:
-    import unittest
+import unittest
 import uuid
 
 from queries import pool
-
 
 MAX_POOL_SIZE = 100
 
@@ -123,7 +119,8 @@ class PoolTests(unittest.TestCase):
         obj = pool.Pool(str(uuid.uuid4()))
         psycopg2_conn = mock.Mock()
         obj.add(psycopg2_conn)
-        conn = obj._connection(psycopg2_conn)
+        self._connection = obj.connection_handle
+        conn = self._connection(psycopg2_conn)
         conn.free = mock.Mock()
         obj.free(psycopg2_conn)
         conn.free.assert_called_once_with()
@@ -132,7 +129,7 @@ class PoolTests(unittest.TestCase):
         obj = pool.Pool(str(uuid.uuid4()))
         psycopg2_conn = mock.Mock()
         obj.add(psycopg2_conn)
-        conn = obj._connection(psycopg2_conn)
+        conn = obj.connection_handle(psycopg2_conn)
         conn.free = mock.Mock()
         obj.free(psycopg2_conn)
         conn.free.assert_called_once_with()
@@ -144,7 +141,7 @@ class PoolTests(unittest.TestCase):
                                  busy=False, closed=False):
             [obj.add(conn) for conn in psycopg2_conns]
             for psycopg2_conn in psycopg2_conns:
-                conn = obj._connection(psycopg2_conn)
+                conn = obj.connection_handle(psycopg2_conn)
                 conn.free = mock.Mock()
             obj.free(psycopg2_conns[1])
             self.assertAlmostEqual(int(obj.idle_start), int(time.time()))
@@ -281,7 +278,7 @@ class PoolTests(unittest.TestCase):
         obj = pool.Pool(str(uuid.uuid4()))
         psycopg2_conn = mock.Mock()
         obj.add(psycopg2_conn)
-        self.assertEqual(obj._connection(psycopg2_conn).handle, psycopg2_conn)
+        self.assertEqual(obj.connection_handle(psycopg2_conn).handle, psycopg2_conn)
 
     def test_shutdown_raises_when_executing(self):
         psycopg2_conn = mock_connection()

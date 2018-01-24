@@ -23,6 +23,9 @@ class SessionIntegrationTests(URIMixin, unittest.TestCase):
         except queries.OperationalError as error:
             raise unittest.SkipTest(str(error).split('\n')[0])
 
+    def tearDown(self):
+        self.session.close()
+
     def test_query_returns_results_object(self):
         self.assertIsInstance(self.session.query('SELECT 1 AS value'),
                               queries.Results)
