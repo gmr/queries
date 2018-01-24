@@ -119,7 +119,13 @@ class Session(object):
         :raises: queries.ProgrammingError
 
         """
-        self._cursor.callproc(name, args)
+        try:
+            self._cursor.callproc(name, args)
+        except psycopg2.Error as err:
+            self._incr_exceptions()
+            raise err
+        finally:
+            self._incr_executions()
         return results.Results(self._cursor)
 
     def close(self):
@@ -203,7 +209,13 @@ class Session(object):
         :raises: queries.ProgrammingError
 
         """
-        self._cursor.execute(sql, parameters)
+        try:
+            self._cursor.execute(sql, parameters)
+        except psycopg2.Error as err:
+            self._incr_exceptions()
+            raise err
+        finally:
+            self._incr_executions()
         return results.Results(self._cursor)
 
     def set_encoding(self, value=DEFAULT_ENCODING):
@@ -310,6 +322,14 @@ class Session(object):
             cursor.scrollable = True
             cursor.withhold = True
         return cursor
+
+    def _incr_exceptions(self):
+        """Increment the number of exceptions for the current connection."""
+        self._pool_manager.get_connection(self.pid, self._conn).exceptions += 1
+
+    def _incr_executions(self):
+        """Increment the number of executions for the current connection."""
+        self._pool_manager.get_connection(self.pid, self._conn).executions += 1
 
     def _psycopg2_connect(self, kwargs):
         """Return a psycopg2 connection for the specified kwargs. Extend for
