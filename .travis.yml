@@ -1,28 +1,64 @@
 sudo: false
 language: python
 python:
-  - 2.6
-  - 2.7
-  - pypy
-  - 3.3
-  - 3.4
-  - 3.5
-services:
-  - postgresql
+ - 2.7
+ - 3.4
+ - 3.5
+ - 3.6
+ - pypy
+ - pypy3
+
+env:
+  global:
+   - PATH=$HOME/.local/bin:$PATH
+   - AWS_DEFAULT_REGION=us-east-1
+   - secure: "inURdx4ldkJqQXL1TyvKImC3EnL5TixC1DlNMBYi5ttygwAk+mSSSw8Yc7klB6D1m6q79xUlHRk06vbz23CsXTM4AClC5Emrk6XN2GlUKl5WI+z+A2skI59buEhLWe7e2KzhB/AVx2E3TfKa0oY7raM0UUnaOkpV1Cj+mHKPIT0="
+   - secure: "H32DV3713a6UUuEJujrG7SfUX4/5WrwQy/3DxeptC6L7YPlTYxHBdEsccTfN5z806EheIl4BdIoxoDtq7PU/tWQoG1Lp2ze60mpwrniHajhFnjk7zP6pHvkhGLr8flhSmAb6CQBreNFOHTLWBMGPfi7k1Q9Td9MHbRo/FsTxqsM="
+
 install:
-  - pip install -r test-requirements.txt
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install unittest2; fi
-  - python setup.py develop
+ - pip install awscli
+ - pip install -r requires/testing.txt
+
+stages:
+ - test
+ - name: upload_coverage
+   if: branch = master
+ - name: deploy
+   if: tag IS present
+
 script: nosetests
+
 after_success:
-  - codecov
-deploy:
-  distributions: sdist
-  provider: pypi
-  on:
-    python: 2.7
-    tags: true
-    all_branches: true
-  user: crad
-  password:
-    secure: UWQWui+QhAL1cz6oW/vqjEEp6/EPn1YOlItNJcWHNOO/WMMOlaTVYVUuXp+y+m52B+8PtYZZCTHwKCUKe97Grh291FLxgd0RJCawA40f4v1gmOFYLNKyZFBGfbC69/amxvGCcDvOPtpChHAlTIeokS5EQneVcAhXg2jXct0HTfI=
+ - aws s3 cp .coverage "s3://com-gavinroy-travis/queries/$TRAVIS_BUILD_NUMBER/.coverage.${TRAVIS_PYTHON_VERSION}"
+
+jobs:
+  include:
+   - stage: test
+     services:
+     - postgres
+     script: nosetests
+   - stage: upload coverage
+     python: 3.6
+     install:
+     - pip install awscli coverage codecov
+     script:
+     - mkdir coverage
+     - aws s3 cp --recursive s3://com-gavinroy-travis/queries/$TRAVIS_BUILD_NUMBER/
+       coverage
+     - cd coverage
+     - coverage combine
+     - cd ..
+     - mv coverage/.coverage .
+     - coverage report
+     after_success: codecov
+   - stage: deploy
+     python: 3.6
+     deploy:
+       distributions: sdist bdist_wheel
+       provider: pypi
+       user: crad
+       on:
+         tags: true
+         all_branches: true
+       password:
+         secure: UWQWui+QhAL1cz6oW/vqjEEp6/EPn1YOlItNJcWHNOO/WMMOlaTVYVUuXp+y+m52B+8PtYZZCTHwKCUKe97Grh291FLxgd0RJCawA40f4v1gmOFYLNKyZFBGfbC69/amxvGCcDvOPtpChHAlTIeokS5EQneVcAhXg2jXct0HTfI=
