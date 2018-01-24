@@ -5,7 +5,10 @@ Tests for functionality in the tornado_session module
 import mock
 import unittest
 
-from psycopg2 import extras
+try:
+    from psycopg2cffi import extras
+except ImportError:
+    from psycopg2 import extras
 
 from tornado import concurrent
 from tornado import gen
