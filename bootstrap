@@ -1,0 +1,45 @@
+#!/bin/sh
+# vim: set ts=2 sts=2 sw=2 et:
+test -n "$SHELLDEBUG" && set -x
+if test -e /var/run/docker.sock
+then
+  DOCKER_IP=127.0.0.1
+else
+  echo "Docker environment not detected."
+  exit 1
+fi
+set -e
+
+if test -z "$DOCKER_COMPOSE_PREFIX"
+then
+  CWD=${PWD##*/}
+  DOCKER_COMPOSE_PREFIX=${CWD/_/}
+fi
+COMPOSE_ARGS="-p ${DOCKER_COMPOSE_PREFIX}"
+
+test -d build || mkdir build
+
+get_exposed_port() {
+  docker-compose ${COMPOSE_ARGS} port $1 $2 | cut -d: -f2
+}
+
+docker-compose ${COMPOSE_ARGS} down --volumes --remove-orphans
+docker-compose ${COMPOSE_ARGS} pull
+docker-compose ${COMPOSE_ARGS} up -d --no-recreate
+
+CONTAINER="${DOCKER_COMPOSE_PREFIX}_postgres_1"
+PORT=$(get_exposed_port postgres 5432)
+
+echo "Waiting for ${CONTAINER} \c"
+export PG
+until psql -U postgres -h ${DOCKER_IP} -p ${PORT} -c 'SELECT 1' > /dev/null 2> /dev/null; do
+  echo ".\c"
+  sleep 1
+done
+echo " done"
+
+cat > build/test-environment<<EOF
+export DOCKER_COMPOSE_PREFIX=${DOCKER_COMPOSE_PREFIX}
+export PGHOST=${DOCKER_IP}
+export PGPORT=${PORT}
+EOF

@@ -1,0 +1,6 @@
+%YAML 1.2
+---
+postgres:
+  image: postgres
+  ports:
+    - 5432
