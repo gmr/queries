@@ -53,7 +53,7 @@ class Connection(object):
         :rtype: bool
 
         """
-        return self.handle.closed
+        return self.handle.closed != 0
 
     @property
     def busy(self):
@@ -181,7 +181,8 @@ class Pool(object):
         :rtype: list
 
         """
-        return [c for c in self.connections if c.busy and not c.closed]
+        return [c for c in self.connections.values()
+                if c.busy and not c.closed]
 
     def clean(self):
         """Clean the pool by removing any closed connections and if the pool's
@@ -231,7 +232,7 @@ class Pool(object):
         :rtype: list
 
         """
-        return [c for c in self.connections if c.executing]
+        return [c for c in self.connections.values() if c.executing]
 
     def free(self, connection):
         """Free the connection from use by the session that was using it.
@@ -365,14 +366,13 @@ class Pool(object):
             'connections': {
                 'busy': len(self.busy_connections),
                 'closed': len(self.closed_connections),
-                'executing': len([c for c in self.connections
-                                  if c.executing()]),
+                'executing': len(self.executing_connections),
                 'idle': len(self.idle_connections),
                 'locked': len(self.busy_connections)
             },
             'exceptions': sum([c.exceptions
                                for c in self.connections.values()]),
-            'executions': sum([c.executed
+            'executions': sum([c.executions
                                for c in self.connections.values()]),
             'full': self.is_full,
             'idle': {
