@@ -81,6 +81,3 @@ Indices and tables
 
 .. |License| image:: https://img.shields.io/github/license/gmr/queries.svg?
    :target: https://github.com/gmr/queries
-
-.. |PythonVersions| image:: https://img.shields.io/pypi/pyversions/queries.svg?
-   :target: https://github.com/gmr/queries
