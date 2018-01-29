@@ -295,7 +295,7 @@ class TornadoSession(session.Session):
 
             """
             if cf.exception():
-                self._cleanup_fd(fd)
+                self._cleanup_fd(fd, True)
                 future.set_exception(cf.exception())
 
             else:
@@ -430,7 +430,7 @@ class TornadoSession(session.Session):
             self._ioloop.time() + self._pool_idle_ttl + 1,
             self._pool_manager.clean, self.pid)
 
-    def _cleanup_fd(self, fd):
+    def _cleanup_fd(self, fd, close=False):
         """Ensure the socket socket is removed from the IOLoop, the
         connection stack, and futures stack.
 
@@ -443,7 +443,8 @@ class TornadoSession(session.Session):
                 self._pool_manager.free(self.pid, self._connections[fd])
             except pool.ConnectionNotFoundError:
                 pass
-            self._connections[fd].close()
+            if close:
+                self._connections[fd].close()
             del self._connections[fd]
         if fd in self._futures:
             del self._futures[fd]
