@@ -3,7 +3,7 @@ Queries: PostgreSQL Simplified
 *Queries* is a BSD licensed opinionated wrapper of the psycopg2_ library for
 interacting with PostgreSQL.
 
-|Version| |License| |PythonVersions|
+|Version| |License|
 
 The popular psycopg2_ package is a full-featured python client. Unfortunately
 as a developer, you're often repeating the same steps to get started with your
@@ -52,8 +52,6 @@ Please report any issues to the Github repo at `https://github.com/gmr/queries/i
 Source
 ------
 Queries source is available on Github at  `https://github.com/gmr/queries <https://github.com/gmr/queries>`_
-
-|Status|
 
 Inspiration
 -----------
