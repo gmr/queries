@@ -4,16 +4,10 @@ Version History
 2.0.0 2018-01-29
 -----------------
  - REMOVED support for Python 2.6
- - FIXED CPU Pegging bug: Cleanup IOLoop and internal stack in ``TornadoSession``
-   on connection error. In the case of a connection error, the failure to do this
-   caused CPU to peg @ 100% utilization looping on a non-existent file descriptor.
-   Thanks to `cknave <https://github.com/cknave>`_ for his work on identifying the
-   issue, proposing a fix, and writing a working test case.
+ - FIXED CPU Pegging bug: Cleanup IOLoop and internal stack in ``TornadoSession`` on connection error. In the case of a connection error, the failure to do this caused CPU to peg @ 100% utilization looping on a non-existent file descriptor. Thanks to `cknave <https://github.com/cknave>`_ for his work on identifying the issue, proposing a fix, and writing a working test case.
  - Move the integration tests to use a local docker development environment
- - Added new methods ``queries.pool.Pool.report`` and
-  ``queries.pool.PoolManager.Report` for reporting pool status.
- - Added new methods to ``queries.pool.Pool`` for returning a list of
-   busy, closed, executing, and locked connections.
+ - Added new methods ``queries.pool.Pool.report`` and ``queries.pool.PoolManager.Report`` for reporting pool status.
+ - Added new methods to ``queries.pool.Pool`` for returning a list of busy, closed, executing, and locked connections.
 
 1.10.4 2018-01-10
 -----------------
