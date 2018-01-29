@@ -1,7 +1,7 @@
 Version History
 ===============
 
-2.0.0 2018-01-23
+2.0.0 2018-01-29
 -----------------
  - REMOVED support for Python 2.6
  - FIXED CPU Pegging bug: Cleanup IOLoop and internal stack in ``TornadoSession``
@@ -36,9 +36,9 @@ Version History
 
 1.10.0 2017-09-27
 -----------------
- - Free when tornado_session.Result is ``__del__'d`` without ``free`` being called.
+ - Free when tornado_session.Result is ``__del__``'d without ``free`` being called.
  - Auto-clean the pool after Results.free TTL+1 in tornado_session.TornadoSession
- - Dont raise NotImplementedError in Results.free for synchronous use, just treat as a noop
+ - Don't raise NotImplementedError in Results.free for synchronous use, just treat as a noop
 
 1.9.1 2016-10-25
 ----------------

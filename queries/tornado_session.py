@@ -372,11 +372,13 @@ class TornadoSession(session.Session):
             def completed(qf):
                 """Invoked by the IOLoop when the future has completed"""
                 if qf.exception():
+                    self._incr_exceptions(conn)
                     err = qf.exception()
                     LOGGER.debug('Cleaning cursor due to exception: %r', err)
                     self._exec_cleanup(cursor, conn.fileno())
                     future.set_exception(err)
                 else:
+                    self._incr_executions(conn)
                     value = Results(cursor, self._exec_cleanup, conn.fileno())
                     future.set_result(value)
 
@@ -445,6 +447,22 @@ class TornadoSession(session.Session):
             del self._connections[fd]
         if fd in self._futures:
             del self._futures[fd]
+
+    def _incr_exceptions(self, conn):
+        """Increment the number of exceptions for the current connection.
+
+        :param psycopg2.extensions.connection conn: the psycopg2 connection
+
+        """
+        self._pool_manager.get_connection(self.pid, conn).exceptions += 1
+
+    def _incr_executions(self, conn):
+        """Increment the number of executions for the current connection.
+
+        :param psycopg2.extensions.connection conn: the psycopg2 connection
+
+        """
+        self._pool_manager.get_connection(self.pid, conn).executions += 1
 
     def _on_io_events(self, fd=None, _events=None):
         """Invoked by Tornado's IOLoop when there are events for the fd

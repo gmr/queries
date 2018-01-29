@@ -2,5 +2,4 @@ coverage
 flake8
 mock
 nose
-codecov
 tornado
