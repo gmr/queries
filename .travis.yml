@@ -36,6 +36,7 @@ jobs:
    - python: pypy
    - python: pypy3
    - stage: upload coverage
+     if: repo IS gmr/queries
      services: []
      python: 3.6
      install:
@@ -51,6 +52,7 @@ jobs:
      - coverage report
      after_success: codecov
    - stage: deploy
+     if: repo IS gmr/queries
      python: 3.6
      services: []
      install: true
