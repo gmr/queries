@@ -32,8 +32,11 @@ class Results(object):
             self.cursor.scroll(item, 'absolute')
         except psycopg2.ProgrammingError:
             raise IndexError('No such row')
-        else:
+        try:
             return self.cursor.fetchone()
+        except psycopg2.ProgrammingError as e:
+            if str(e) == 'no results to fetch':
+                raise IndexError('No such row')
 
     def __iter__(self):
         """Iterate through the result set
@@ -45,8 +48,12 @@ class Results(object):
             raise StopIteration
 
         self._rewind()
-        for row in self.cursor:
-            yield row
+        try:
+            for row in self.cursor:
+                yield row
+        except psycopg2.ProgrammingError as e:
+            if str(e) != 'no results to fetch':
+                raise
 
     def __len__(self):
         """Return the number of rows that were returned from the query
@@ -78,7 +85,11 @@ class Results(object):
 
         self._rewind()
         if self.cursor.rowcount == 1:
-            return dict(self.cursor.fetchone())
+            try:
+                return dict(self.cursor.fetchone())
+            except psycopg2.ProgrammingError as e:
+                if str(e) == 'no results to fetch':
+                    return {}
         else:
             raise ValueError('More than one row')
 
@@ -106,8 +117,14 @@ class Results(object):
         if not self.cursor.rowcount:
             return []
 
-        self.cursor.scroll(0, 'absolute')
-        return self.cursor.fetchall()
+        try:
+            self.cursor.scroll(0, 'absolute')
+            return self.cursor.fetchall()
+        except psycopg2.ProgrammingError as e:
+            if str(e) == 'no results to fetch':
+                return []
+            else:
+                raise
 
     @property
     def rownumber(self):
