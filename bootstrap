@@ -16,7 +16,7 @@ then
   export COMPOSE_PROJECT_NAME=${CWD/_/}
 fi
 
-test -d build || mkdir build
+mkdir -p build
 
 get_exposed_port() {
   docker-compose port $1 $2 | cut -d: -f2
