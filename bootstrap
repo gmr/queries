@@ -22,7 +22,7 @@ get_exposed_port() {
   docker-compose port $1 $2 | cut -d: -f2
 }
 
-docker-compose down --volumes --remove-orphans
+docker-compose down -t 0 --volumes --remove-orphans
 docker-compose pull
 docker-compose up -d --no-recreate
 
