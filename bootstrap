@@ -30,7 +30,7 @@ PORT=$(get_exposed_port postgres 5432)
 
 echo "Waiting for postgres \c"
 export PG
-until psql -U postgres -h ${DOCKER_IP} -p ${PORT} -c 'SELECT 1' > /dev/null 2> /dev/null; do
+until docker-compose exec postgres psql -U postgres -c 'SELECT 1' > /dev/null 2> /dev/null; do
   echo ".\c"
   sleep 1
 done
