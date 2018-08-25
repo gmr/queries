@@ -28,10 +28,10 @@ docker-compose up -d --no-recreate
 
 PORT=$(get_exposed_port postgres 5432)
 
-echo "Waiting for postgres \c"
+printf "Waiting for postgres "
 export PG
 until docker-compose exec postgres psql -U postgres -c 'SELECT 1' > /dev/null 2> /dev/null; do
-  echo ".\c"
+  printf "."
   sleep 1
 done
 echo " done"
