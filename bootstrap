@@ -30,7 +30,7 @@ PORT=$(get_exposed_port postgres 5432)
 
 printf "Waiting for postgres "
 export PG
-until docker-compose exec postgres psql -U postgres -c 'SELECT 1' > /dev/null 2> /dev/null; do
+until docker-compose exec postgres pg_isready -q; do
   printf "."
   sleep 1
 done
