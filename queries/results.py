@@ -41,12 +41,10 @@ class Results(object):
         :rtype: mixed
 
         """
-        if not self.cursor.rowcount:
-            raise StopIteration
-
-        self._rewind()
-        for row in self.cursor:
-            yield row
+        if self.cursor.rowcount:
+            self._rewind()
+            for row in self.cursor:
+                yield row
 
     def __len__(self):
         """Return the number of rows that were returned from the query
