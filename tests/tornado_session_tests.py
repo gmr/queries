@@ -146,7 +146,7 @@ class SessionConnectTests(testing.AsyncTestCase):
                 self.obj._exec_cleanup(mock.Mock(), 14)
                 pm_free.assert_called_once_with(self.obj.pid, conn)
 
-    def test_exec_cleanup_frees_connection(self):
+    def test_exec_cleanup_remove_handler_invoked(self):
         with mock.patch.object(self.obj._pool_manager, 'free'):
             with mock.patch.object(self.obj._ioloop, 'remove_handler') as rh:
                 self.obj._connections[14] = mock.Mock()
