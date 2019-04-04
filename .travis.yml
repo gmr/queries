@@ -12,7 +12,6 @@ stages:
 - test
 - name: upload coverage
 - name: deploy
-  if: tag IS present
 
 services:
 - postgres
@@ -38,7 +37,7 @@ jobs:
    - stage: upload coverage
      if: repo IS gmr/queries
      services: []
-     python: 3.7
+     python: 3.6
      install:
      - pip install awscli coverage codecov
      script:
@@ -52,7 +51,7 @@ jobs:
      - coverage report
      after_success: codecov
    - stage: deploy
-     if: repo IS gmr/queries
+     if: repo = gmr/queries
      python: 3.6
      services: []
      install: true
