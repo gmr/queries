@@ -2,9 +2,10 @@
 Tests for Connection class in the pool module
 
 """
-import mock
 import unittest
 import weakref
+
+import mock
 
 from queries import pool
 

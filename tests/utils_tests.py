@@ -2,9 +2,10 @@
 Tests for functionality in the utils module
 
 """
-import mock
 import platform
 import unittest
+
+import mock
 
 import queries
 from queries import utils

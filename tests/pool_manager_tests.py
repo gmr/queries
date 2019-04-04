@@ -2,9 +2,10 @@
 Tests for Manager class in the pool module
 
 """
-import mock
 import unittest
 import uuid
+
+import mock
 
 from queries import pool
 

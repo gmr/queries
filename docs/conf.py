@@ -26,17 +26,19 @@ html_static_path = ['_static']
 htmlhelp_basename = 'Queriesdoc'
 latex_elements = {}
 latex_documents = [
-  ('index', 'Queries.tex', u'Queries Documentation',
-   u'Gavin M. Roy', 'manual'),
+    ('index', 'Queries.tex', 'Queries Documentation',
+     'Gavin M. Roy', 'manual'),
 ]
 man_pages = [
-    ('index', 'queries', u'Queries Documentation',
-     [u'Gavin M. Roy'], 1)
+    ('index', 'queries', 'Queries Documentation',
+     ['Gavin M. Roy'], 1)
 ]
 texinfo_documents = [
-  ('index', 'Queries', u'Queries Documentation',
-   u'Gavin M. Roy', 'Queries', 'PostgreSQL Simplified',
-   'Miscellaneous'),
+    ('index', 'Queries', 'Queries Documentation',
+     'Gavin M. Roy', 'Queries', 'PostgreSQL Simplified',
+     'Miscellaneous'),
 ]
-intersphinx_mapping = {'psycopg2': ('http://initd.org/psycopg/docs/', None),
-                       'tornado': ('http://www.tornadoweb.org/en/stable', None)}
+intersphinx_mapping = {
+    'psycopg2': ('http://initd.org/psycopg/docs/', None),
+    'tornado': ('http://www.tornadoweb.org/en/stable', None)
+}

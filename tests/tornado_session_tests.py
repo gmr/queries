@@ -2,8 +2,9 @@
 Tests for functionality in the tornado_session module
 
 """
-import mock
 import unittest
+
+import mock
 
 # Out of order import to ensure psycopg2cffi is registered
 from queries import pool, tornado_session
