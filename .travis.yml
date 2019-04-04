@@ -10,8 +10,9 @@ env:
 
 stages:
 - test
-- name: upload coverage
+- name: coverage
 - name: deploy
+  if: tag IS present
 
 services:
 - postgres
@@ -34,8 +35,8 @@ jobs:
    - python: 3.6
    - python: pypy
    - python: pypy3
-   - stage: upload coverage
-     if: repo IS gmr/queries
+   - stage: coverage
+     if: repo = gmr/queries
      services: []
      python: 3.6
      install:
