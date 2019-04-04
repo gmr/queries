@@ -161,7 +161,7 @@ class SessionTestCase(unittest.TestCase):
                                  _autocommit=mock.Mock()):
             with session.Session(self.URI):
                 pass
-            cleanup.assert_called_once_with()
+            self.assertTrue(cleanup.called)
 
     def test_autocommit_sets_attribute(self):
         self.conn.autocommit = False

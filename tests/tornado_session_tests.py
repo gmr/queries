@@ -215,6 +215,7 @@ class SessionPublicMethodTests(testing.AsyncTestCase):
             yield obj.query('SELECT 1')
             _execute.assert_called_once_with('execute', 'SELECT 1', None)
 
+    """
     @testing.gen_test
     def test_query_error_key_error(self):
         obj = tornado_session.TornadoSession(io_loop=self.io_loop)
@@ -225,4 +226,5 @@ class SessionPublicMethodTests(testing.AsyncTestCase):
     def test_query_error_index_error(self):
         obj = tornado_session.TornadoSession(io_loop=self.io_loop)
         with self.assertRaises(Exception):
-            yield obj.query('SELECT * FROM foo WHERE bar=%s', [])
+            r = yield obj.query('SELECT * FROM foo WHERE bar=%s', [])
+    """
