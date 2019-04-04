@@ -3,15 +3,17 @@ Tests for functionality in the session module
 
 """
 import hashlib
-import mock
-import platform
+import logging
 import unittest
+
+import mock
+from psycopg2 import extras
+import psycopg2
 
 # Out of order import to ensure psycopg2cffi is registered
 from queries import pool, results, session, utils
 
-from psycopg2 import extras
-import psycopg2
+LOGGER = logging.getLogger(__name__)
 
 
 class SessionTestCase(unittest.TestCase):
@@ -68,7 +70,7 @@ class SessionTestCase(unittest.TestCase):
 
     def test_backend_pid_invokes_conn_backend_pid(self):
         self.conn.get_backend_pid = get_backend_pid = mock.Mock()
-        val = self.obj.backend_pid
+        LOGGER.debug('ValueL %s', self.obj.backend_pid)
         get_backend_pid.assert_called_once_with()
 
     def test_callproc_invokes_cursor_callproc(self):
@@ -114,8 +116,9 @@ class SessionTestCase(unittest.TestCase):
         self.assertListEqual(self.obj.notices, [1, 2, 3])
 
     def test_pid_value(self):
-        expectation = hashlib.md5(':'.join([self.obj.__class__.__name__,
-                                            self.URI]).encode('utf-8')).hexdigest()
+        expectation = hashlib.md5(
+            ':'.join([self.obj.__class__.__name__,
+                      self.URI]).encode('utf-8')).hexdigest()
         self.assertEqual(self.obj.pid, expectation)
 
     def test_query_invokes_cursor_execute(self):
@@ -156,7 +159,7 @@ class SessionTestCase(unittest.TestCase):
                                  _connect=mock.Mock(),
                                  _get_cursor=mock.Mock(),
                                  _autocommit=mock.Mock()):
-            with session.Session(self.URI) as sess:
+            with session.Session(self.URI):
                 pass
             cleanup.assert_called_once_with()
 

@@ -73,7 +73,7 @@ class ManagerTests(unittest.TestCase):
 
     def test_create_prevents_duplicate_pool_id(self):
         pid = str(uuid.uuid4())
-        with mock.patch('queries.pool.Pool') as Pool:
+        with mock.patch('queries.pool.Pool'):
             self.manager.create(pid, 10, 10)
             self.assertRaises(KeyError, self.manager.create, pid, 10, 10)
 

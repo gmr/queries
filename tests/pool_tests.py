@@ -2,10 +2,11 @@
 Tests for functionality in the pool module
 
 """
-import mock
 import time
 import unittest
 import uuid
+
+import mock
 
 from queries import pool
 
@@ -278,7 +279,8 @@ class PoolTests(unittest.TestCase):
         obj = pool.Pool(str(uuid.uuid4()))
         psycopg2_conn = mock.Mock()
         obj.add(psycopg2_conn)
-        self.assertEqual(obj.connection_handle(psycopg2_conn).handle, psycopg2_conn)
+        self.assertEqual(
+            obj.connection_handle(psycopg2_conn).handle, psycopg2_conn)
 
     def test_shutdown_raises_when_executing(self):
         psycopg2_conn = mock_connection()
@@ -286,4 +288,3 @@ class PoolTests(unittest.TestCase):
         obj = pool.Pool(str(uuid.uuid4()))
         obj.add(psycopg2_conn)
         self.assertRaises(pool.ConnectionBusyError, obj.shutdown)
-
