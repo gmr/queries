@@ -4,9 +4,9 @@ import platform
 
 # PYPY vs cpython
 if platform.python_implementation() == 'PyPy':
-    install_requires = ['psycopg2cffi>=2.7.2,<3']
+    install_requires = ['psycopg2cffi>=2.7.2,<2.8']
 else:
-    install_requires = ['psycopg2>=2.5.1,<3']
+    install_requires = ['psycopg2>=2.5.1,<2.8']
 
 # Install tornado if generating docs on readthedocs
 if os.environ.get('READTHEDOCS', None) == 'True':
@@ -22,13 +22,14 @@ classifiers = ['Development Status :: 5 - Production/Stable',
                'Programming Language :: Python :: 3.4',
                'Programming Language :: Python :: 3.5',
                'Programming Language :: Python :: 3.6',
+               'Programming Language :: Python :: 3.7',
                'Programming Language :: Python :: Implementation :: CPython',
                'Programming Language :: Python :: Implementation :: PyPy',
                'Topic :: Database',
                'Topic :: Software Development :: Libraries']
 
 setup(name='queries',
-      version='2.0.0',
+      version='2.0.1',
       description="Simplified PostgreSQL client built upon Psycopg2",
       maintainer="Gavin M. Roy",
       maintainer_email="gavinmroy@gmail.com",

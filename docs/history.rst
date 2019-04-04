@@ -1,6 +1,11 @@
 Version History
 ===============
 
+2.0.1 2019-04-04
+-----------------
+ - Narrow the pin to psycopg2 < 2.8 due to a breaking change
+ - Fix Results iterator for Python 3.7 (#31 - `nvllsvm <https://github.com/nvllsvm>`_)
+
 2.0.0 2018-01-29
 -----------------
  - REMOVED support for Python 2.6
