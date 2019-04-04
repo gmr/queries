@@ -117,7 +117,7 @@ class SessionConnectTests(testing.AsyncTestCase):
     def test_psycopg2_connect_invokes_psycopg2_connect(self):
         with mock.patch('psycopg2.connect') as connect:
             self.obj._psycopg2_connect({})
-            connect.assert_called_once_with({'async': True})
+            connect.assert_called_once_with(**{'async': True})
 
     def test_on_io_events_returns_if_fd_not_present(self):
         with mock.patch.object(self.obj, '_poll_connection') as poll:
