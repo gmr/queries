@@ -15,7 +15,7 @@ stages:
   if: tag IS present
 
 services:
-- postgres
+- postgresql
 
 install:
 - pip install awscli
