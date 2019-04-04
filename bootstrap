@@ -10,36 +10,33 @@ else
 fi
 set -e
 
-if test -z "$DOCKER_COMPOSE_PREFIX"
+if test -z "$COMPOSE_PROJECT_NAME"
 then
   CWD=${PWD##*/}
-  DOCKER_COMPOSE_PREFIX=${CWD/_/}
+  export COMPOSE_PROJECT_NAME=${CWD/_/}
 fi
-COMPOSE_ARGS="-p ${DOCKER_COMPOSE_PREFIX}"
 
-test -d build || mkdir build
+mkdir -p build
 
 get_exposed_port() {
-  docker-compose ${COMPOSE_ARGS} port $1 $2 | cut -d: -f2
+  docker-compose port $1 $2 | cut -d: -f2
 }
 
-docker-compose ${COMPOSE_ARGS} down --volumes --remove-orphans
-docker-compose ${COMPOSE_ARGS} pull
-docker-compose ${COMPOSE_ARGS} up -d --no-recreate
+docker-compose down -t 0 --volumes --remove-orphans
+docker-compose pull
+docker-compose up -d --no-recreate
 
-CONTAINER="${DOCKER_COMPOSE_PREFIX}_postgres_1"
 PORT=$(get_exposed_port postgres 5432)
 
-echo "Waiting for ${CONTAINER} \c"
+printf "Waiting for postgres "
 export PG
-until psql -U postgres -h ${DOCKER_IP} -p ${PORT} -c 'SELECT 1' > /dev/null 2> /dev/null; do
-  echo ".\c"
+until docker-compose exec postgres pg_isready -q; do
+  printf "."
   sleep 1
 done
 echo " done"
 
 cat > build/test-environment<<EOF
-export DOCKER_COMPOSE_PREFIX=${DOCKER_COMPOSE_PREFIX}
 export PGHOST=${DOCKER_IP}
 export PGPORT=${PORT}
 EOF
