@@ -1,13 +1,17 @@
 Version History
 ===============
 
+2.0.2 2019-04-05
+----------------
+- Switch to psycopg2-binary package
+
 2.0.1 2019-04-04
------------------
+----------------
  - Narrow the pin to psycopg2 < 2.8 due to a breaking change
  - Fix Results iterator for Python 3.7 (#31 - `nvllsvm <https://github.com/nvllsvm>`_)
 
 2.0.0 2018-01-29
------------------
+----------------
  - REMOVED support for Python 2.6
  - FIXED CPU Pegging bug: Cleanup IOLoop and internal stack in ``TornadoSession`` on connection error. In the case of a connection error, the failure to do this caused CPU to peg @ 100% utilization looping on a non-existent file descriptor. Thanks to `cknave <https://github.com/cknave>`_ for his work on identifying the issue, proposing a fix, and writing a working test case.
  - Move the integration tests to use a local docker development environment

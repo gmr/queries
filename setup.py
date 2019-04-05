@@ -7,7 +7,7 @@ import setuptools
 if platform.python_implementation() == 'PyPy':
     install_requires = ['psycopg2cffi>=2.7.2,<2.8']
 else:
-    install_requires = ['psycopg2>=2.5.1,<2.8']
+    install_requires = ['psycopg2-binary>=2.7.3.2,<2.8']
 
 # Install tornado if generating docs on readthedocs
 if os.environ.get('READTHEDOCS', None) == 'True':
