@@ -37,6 +37,13 @@ class ResultsTestCase(unittest.TestCase):
             return self.obj[1]
         self.assertRaises(IndexError, get_row)
 
+    def test_getitem_raises_index_error_no_results(self):
+        self.cursor.rowcount = 1
+        self.cursor.fetchone = mock.Mock(
+            side_effect=psycopg2.ProgrammingError('no results to fetch'))
+        with self.assertRaises(IndexError):
+            self.obj[0]
+
     def test_getitem_invokes_fetchone(self):
         self.cursor.scroll = mock.Mock()
         self.cursor.fetchone = mock.Mock()
@@ -50,6 +57,12 @@ class ResultsTestCase(unittest.TestCase):
             [x for x in self.obj]
             assert not rewind.called, \
                 '_rewind should not be called on empty result'
+
+    def test_iter_on_no_results(self):
+        self.cursor.rowcount = 1
+        self.cursor.__iter__ = mock.Mock(
+            side_effect=psycopg2.ProgrammingError('no results to fetch'))
+        self.assertEqual(list(self.obj), [])
 
     def test_iter_rewinds(self):
         self.cursor.__iter__ = mock.Mock(return_value=iter([1, 2, 3]))
@@ -80,6 +93,12 @@ class ResultsTestCase(unittest.TestCase):
 
     def test_as_dict_no_rows(self):
         self.cursor.rowcount = 0
+        self.assertDictEqual(self.obj.as_dict(), {})
+
+    def test_as_dict_no_results(self):
+        self.cursor.rowcount = 1
+        self.cursor.fetchone = mock.Mock(
+            side_effect=psycopg2.ProgrammingError('no results to fetch'))
         self.assertDictEqual(self.obj.as_dict(), {})
 
     def test_as_dict_rewinds(self):
@@ -126,6 +145,12 @@ class ResultsTestCase(unittest.TestCase):
         self.cursor.fetchall = mock.Mock()
         self.obj.items()
         self.cursor.fetchall.assert_called_once_with()
+
+    def test_items_returns_empty_when_nothing_to_fetch(self):
+        self.cursor.rowcount = 1
+        self.cursor.fetchall = mock.Mock(
+            side_effect=psycopg2.ProgrammingError('no results to fetch'))
+        self.assertEqual(self.obj.items(), [])
 
     def test_rownumber_value(self):
         self.cursor.rownumber = 10
