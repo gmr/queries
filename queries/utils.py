@@ -146,5 +146,5 @@ def urlparse(url):
                   parsed.fragment,
                   parsed.username,
                   parsed.password,
-                  hostname.replace('%2f', '/'),
+                  hostname.replace('%2F', '/').replace('%2f', '/'),
                   parsed.port)
