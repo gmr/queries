@@ -1,3 +1,5 @@
+.. py:module:: queries.tornado_session
+
 TornadoSession Asynchronous API
 ===============================
 Use a Queries Session asynchronously within the `Tornado <http://www.tornadoweb.org>`_ framework.

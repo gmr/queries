@@ -1,3 +1,5 @@
+.. py:module:: queries.results
+
 Query Results
 =============
 Results from calls to :py:meth:`Session.query <queries.Session.query>` and

@@ -1,3 +1,5 @@
+.. py:module:: queries.pool
+
 Connection Pooling
 ==================
 The :py:class:`PoolManager <queries.pool.PoolManager>` class provides top-level

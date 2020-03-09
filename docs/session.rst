@@ -1,3 +1,5 @@
+.. py:module:: queries.session
+
 Session API
 ===========
 The Session class allows for a unified (and simplified) view of interfacing with
