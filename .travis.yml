@@ -35,12 +35,13 @@ jobs:
    - python: 3.5
    - python: 3.6
    - python: 3.7
+   - python: 3.8
    - python: pypy
    - python: pypy3
    - stage: coverage
      if: repo = gmr/queries
      services: []
-     python: 3.6
+     python: 3.7
      install:
      - pip install awscli coverage codecov
      script:
