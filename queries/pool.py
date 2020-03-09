@@ -37,7 +37,7 @@ class Connection(object):
 
         """
         LOGGER.debug('Connection %s closing', self.id)
-        if self.busy:
+        if self.busy and not self.closed:
             raise ConnectionBusyError(self)
         with self._lock:
             if not self.handle.closed:
