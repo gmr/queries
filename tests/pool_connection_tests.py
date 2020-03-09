@@ -61,6 +61,7 @@ class ConnectionTests(unittest.TestCase):
 
     def test_close_raises_when_busy(self):
         self.handle.isexecuting.return_value = True
+        self.handle.closed = False
         self.assertRaises(pool.ConnectionBusyError, self.connection.close)
 
     def test_close_invokes_handle_close(self):

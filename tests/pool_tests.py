@@ -271,6 +271,7 @@ class PoolTests(unittest.TestCase):
     def test_remove_raises_when_connection_is_busy(self):
         obj = pool.Pool(str(uuid.uuid4()))
         psycopg2_conn = mock.Mock()
+        psycopg2_conn.closed = False
         obj.add(psycopg2_conn)
         self.assertRaises(pool.ConnectionBusyError, obj.remove,
                           psycopg2_conn)
