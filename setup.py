@@ -15,7 +15,7 @@ if os.environ.get('READTHEDOCS', None) == 'True':
 
 setuptools.setup(
     name='queries',
-    version='2.0.1',
+    version='2.1.0',
     description='Simplified PostgreSQL client built upon Psycopg2',
     long_description=open('README.rst').read(),
     maintainer='Gavin M. Roy',
