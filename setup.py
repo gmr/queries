@@ -5,9 +5,9 @@ import setuptools
 
 # PYPY vs cpython
 if platform.python_implementation() == 'PyPy':
-    install_requires = ['psycopg2cffi>=2.7.2,<2.8']
+    install_requires = ['psycopg2cffi>=2.7.2,<2.9']
 else:
-    install_requires = ['psycopg2>=2.5.1,<2.8']
+    install_requires = ['psycopg2>=2.5.1,<2.9']
 
 # Install tornado if generating docs on readthedocs
 if os.environ.get('READTHEDOCS', None) == 'True':
@@ -37,6 +37,8 @@ setuptools.setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Database',
