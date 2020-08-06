@@ -70,7 +70,7 @@ class Session(object):
     def __init__(self, uri=DEFAULT_URI,
                  cursor_factory=extras.RealDictCursor,
                  pool_idle_ttl=pool.DEFAULT_IDLE_TTL,
-                 pool_max_size=pool.DEFAULT_MAX_SIZE
+                 pool_max_size=pool.DEFAULT_MAX_SIZE,
                  autocommit=True):
         """Connect to a PostgreSQL server using the module wide connection and
         set the isolation level.
