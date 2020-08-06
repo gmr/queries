@@ -253,7 +253,10 @@ class Session(object):
         self._cleanup()
 
     def _autocommit(self, autocommit):
-        """Set the isolation level automatically to commit after every query"""
+        """Set the isolation level automatically to commit or not after every query
+        
+        :param autocommit: Boolean (Default - True)
+        """
         self._conn.autocommit = autocommit
 
     def _cleanup(self):
