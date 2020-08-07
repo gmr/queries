@@ -70,7 +70,8 @@ class Session(object):
     def __init__(self, uri=DEFAULT_URI,
                  cursor_factory=extras.RealDictCursor,
                  pool_idle_ttl=pool.DEFAULT_IDLE_TTL,
-                 pool_max_size=pool.DEFAULT_MAX_SIZE):
+                 pool_max_size=pool.DEFAULT_MAX_SIZE,
+                 autocommit=True):
         """Connect to a PostgreSQL server using the module wide connection and
         set the isolation level.
 
@@ -90,7 +91,7 @@ class Session(object):
         self._conn = self._connect()
         self._cursor_factory = cursor_factory
         self._cursor = self._get_cursor(self._conn)
-        self._autocommit()
+        self._autocommit(autocommit)
 
     @property
     def backend_pid(self):
@@ -251,9 +252,12 @@ class Session(object):
         """
         self._cleanup()
 
-    def _autocommit(self):
-        """Set the isolation level automatically to commit after every query"""
-        self._conn.autocommit = True
+    def _autocommit(self, autocommit):
+        """Set the isolation level automatically to commit or not after every query
+        
+        :param autocommit: Boolean (Default - True)
+        """
+        self._conn.autocommit = autocommit
 
     def _cleanup(self):
         """Remove the connection from the stack, closing out the cursor"""

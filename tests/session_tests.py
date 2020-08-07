@@ -165,7 +165,7 @@ class SessionTestCase(unittest.TestCase):
 
     def test_autocommit_sets_attribute(self):
         self.conn.autocommit = False
-        self.obj._autocommit()
+        self.obj._autocommit(True)
         self.assertTrue(self.conn.autocommit)
 
     def test_cleanup_closes_cursor(self):
