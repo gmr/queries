@@ -33,7 +33,11 @@ Queries is available via pypi_ and can be installed with easy_install or pip:
 
 .. code:: bash
 
+    pip install psycopg2-binary # or psycopg2 or psycopg2cffi (for PyPy)
     pip install queries
+
+- `psycopg2` package supported version: `>=2.5.1,<2.9`
+- `psycopg2cffi` package supported version: `>=2.7.2,<2.9`
 
 Usage
 -----

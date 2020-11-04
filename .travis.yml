@@ -20,6 +20,7 @@ services:
 
 install:
 - pip install awscli
+- pip install psycopg2
 - pip install -r requires/testing.txt
 - python setup.py develop
 
