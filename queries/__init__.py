@@ -51,7 +51,7 @@ from psycopg2 import ProgrammingError
 from psycopg2.extensions import QueryCanceledError
 from psycopg2.extensions import TransactionRollbackError
 
-__version__ = '2.1.0'
+__version__ = '2.1.1'
 version = __version__
 
 # Add a Null logging handler to prevent logging output when un-configured
